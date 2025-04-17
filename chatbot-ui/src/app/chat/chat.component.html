@@ -13,6 +13,7 @@
           {{ msg.text }}
         </div>
       </div>
+        
   
       <!-- Chat options (shown at top like chat suggestions) -->
       <div *ngIf="showOptions" class="chat-options">
@@ -21,11 +22,22 @@
         <button (click)="selectOption('Agent')">💬 Talk to Agent</button>
       </div>
     </div>
+
+            <!-- ✅ Typing Indicator goes here -->
+            <div *ngIf="isAgentTyping" class="typing-indicator">
+              👨‍💼 Agent is typing<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+            </div>
   
     <!-- Input box -->
     <div class="chatbot-input">
-      <input [(ngModel)]="inputText" (keyup.enter)="sendMessage()" placeholder="Type your message..." />
+      <input
+        [(ngModel)]="inputText"
+        (keyup)="handleTyping()"
+        (keyup.enter)="sendMessage()"
+        (blur)="sendTyping(false)"
+        placeholder="Type your message..."
+      />
       <button (click)="sendMessage()">➤</button>
     </div>
-  </div>
+    
   

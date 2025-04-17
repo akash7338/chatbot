@@ -14,6 +14,8 @@ import SockJS from 'sockjs-client';
 })
 export class AgentComponent implements OnInit {
   role: string = 'Agent';
+  isUserTyping=false;
+  typingTimeout: any;
   inputText = '';
   messages: { sender: string; text: string }[] = [];
 
@@ -35,6 +37,15 @@ export class AgentComponent implements OnInit {
           this.stompClient.subscribe('/topic/messages', (message) => {
             const received = JSON.parse(message.body);
             this.messages.push({ sender: received.sender, text: received.message });
+          });
+
+          this.stompClient.subscribe('/topic/typing', (message) => {
+            const data = JSON.parse(message.body);
+            console.log('[Typing] Received in agent:', data);
+            // Only care if someone else (i.e. agent) is typing
+            if (data.sender !== this.role) {
+              this.isUserTyping = data.typing === 'true' || data.typing === true;
+            }
           });
         },
         onStompError: (frame) => {
@@ -65,5 +76,26 @@ export class AgentComponent implements OnInit {
     });
 
     this.inputText = '';
+  }
+
+  handleTyping() {
+    this.sendTyping(true);
+  
+    clearTimeout(this.typingTimeout);
+    this.typingTimeout = setTimeout(() => {
+      this.sendTyping(false);
+    }, 1000);
+  }
+  
+  sendTyping(isTyping: boolean) {
+    if (this.stompClient && this.stompClient.connected) {
+      this.stompClient.publish({
+        destination: '/app/typing',
+        body: JSON.stringify({
+          sender: this.role,
+          typing: isTyping
+        })
+      });
+    }
   }
 }

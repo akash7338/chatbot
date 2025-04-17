@@ -6,6 +6,7 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 
 import java.util.Date;
+import java.util.Map;
 
 @Controller
 public class WebSocketController {
@@ -14,7 +15,15 @@ public class WebSocketController {
     @SendTo("/topic/messages")
     public ChatMessage send(ChatMessage message) {
         message.setTimestamp(new Date());
+        System.out.println("[WebSocket] Message received: " + message);
         return message;
     }
-}
 
+    @MessageMapping("/typing")
+    @SendTo("/topic/typing")
+    public Map<String, String> handleIsTyping(Map<String, String> payload) {
+        System.out.println("[WebSocket] Typing payload received: " + payload);
+        return payload;
+    }
+
+}

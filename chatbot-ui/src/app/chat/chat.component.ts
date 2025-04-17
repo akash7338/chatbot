@@ -16,6 +16,8 @@ import SockJS from 'sockjs-client';
 })
 export class ChatComponent implements OnInit {
   role: string = 'Akash';
+  isAgentTyping = false;
+  typingTimeout: any;
   sessionId = uuid();
   inputText = '';
   showOptions = true;
@@ -29,7 +31,7 @@ export class ChatComponent implements OnInit {
   ngOnInit() {
     this.setupWebSocketConnection();
     this.messages.push({ sender: 'bot', text: 'Hi! I\'m your assistant 🤖. What can I help you with today?' });
-
+    
   }
 
   setupWebSocketConnection() {
@@ -43,6 +45,15 @@ export class ChatComponent implements OnInit {
           this.stompClient.subscribe('/topic/messages', (message) => {
             const received = JSON.parse(message.body);
             this.messages.push({ sender: received.sender, text: received.message });
+          });
+
+          this.stompClient.subscribe('/topic/typing', (message) => {
+            const data = JSON.parse(message.body);
+          
+            // Only care if user (Akash) is typing
+            if (data.sender !== this.role) {
+              this.isAgentTyping = data.typing === true || data.typing==='true';
+            }
           });
         },
         onStompError: (frame) => {
@@ -97,5 +108,29 @@ export class ChatComponent implements OnInit {
     }
 
     this.inputText = '';
+  }
+
+  handleTyping() {
+    if (!this.inputText || this.inputText.trim() === '') return; // ⛔ no typing on empty input
+
+    console.log('[Typing] handleTyping() called');
+    this.sendTyping(true);
+    
+    clearTimeout(this.typingTimeout);
+    this.typingTimeout = setTimeout(() => {
+      this.sendTyping(false);
+    }, 1000);
+  }
+  
+  sendTyping(isTyping: boolean) {
+    if (this.stompClient && this.stompClient.connected) {
+      this.stompClient.publish({
+        destination: '/app/typing',
+        body: JSON.stringify({
+          sender: this.role,
+          typing: isTyping
+        })
+      });
+    }
   }
 }
