@@ -1,0 +1,46 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '2.7.18'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.web'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(11)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+		// Web
+		implementation 'org.springframework.boot:spring-boot-starter-web'
+
+		// WebSocket
+		implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+		// MongoDB
+		implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+
+		// Dialogflow
+		implementation 'com.google.cloud:google-cloud-dialogflow:4.42.0'
+
+		// BigQuery
+		implementation 'com.google.cloud:google-cloud-bigquery:2.38.0'
+
+		// JSON
+		implementation 'org.json:json:20240303'
+
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
