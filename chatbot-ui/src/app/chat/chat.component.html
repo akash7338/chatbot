@@ -1,0 +1,31 @@
+<div class="chatbot-wrapper">
+    <div class="chatbot-header">🤖 ChatBot Assistant</div>
+  
+    <div class="chatbot-messages" #scrollMe>
+      <div *ngFor="let msg of messages" class="chat-bubble" [ngClass]="{
+          'user-msg': msg.sender === role,
+          'bot-msg': msg.sender !== role
+        }">
+         <!-- 👇 Avatar only for bot/agent -->
+         <div class="avatar" *ngIf="msg.sender !== role">👨‍💼</div>
+
+        <div class="bubble-content">
+          {{ msg.text }}
+        </div>
+      </div>
+  
+      <!-- Chat options (shown at top like chat suggestions) -->
+      <div *ngIf="showOptions" class="chat-options">
+        <button (click)="selectOption('Track Order')">📦 Track Order</button>
+        <button (click)="selectOption('Place Order')">🛒 Place Order</button>
+        <button (click)="selectOption('Agent')">💬 Talk to Agent</button>
+      </div>
+    </div>
+  
+    <!-- Input box -->
+    <div class="chatbot-input">
+      <input [(ngModel)]="inputText" (keyup.enter)="sendMessage()" placeholder="Type your message..." />
+      <button (click)="sendMessage()">➤</button>
+    </div>
+  </div>
+  
