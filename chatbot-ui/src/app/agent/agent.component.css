@@ -143,6 +143,33 @@
     margin-top: 2px;
     box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
   }
+
+  .typing-indicator {
+    font-style: italic;
+    font-size: 13px;
+    color: #777;
+    margin-bottom: 6px;
+    padding-left: 8px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .typing-indicator .dot {
+    animation: blink 1.5s infinite;
+    font-weight: bold;
+    font-size: 18px;
+    margin-left: 2px;
+    animation-delay: calc(var(--i, 0) * 0.2s);
+  }
+  
+  .typing-indicator .dot:nth-child(2) { --i: 1; }
+  .typing-indicator .dot:nth-child(3) { --i: 2; }
+  
+  @keyframes blink {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+  }
+  
   
   
 

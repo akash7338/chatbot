@@ -15,10 +15,21 @@
           </div>
         </div>
       </div>
+      
+      <div *ngIf="isUserTyping" class="typing-indicator">
+        🙋 Akash is typing<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+      </div>
+      
     
       <div class="chatbot-input">
-        <input [(ngModel)]="inputText" (keyup.enter)="sendMessage()" placeholder="Type your reply..." />
+        <input
+          [(ngModel)]="inputText"
+          (keyup)="handleTyping()"
+          (keyup.enter)="sendMessage()"
+          (blur)="sendTyping(false)"
+          placeholder="Type your message..."
+        />
         <button (click)="sendMessage()">➤</button>
       </div>
-    </div>
+      
   
