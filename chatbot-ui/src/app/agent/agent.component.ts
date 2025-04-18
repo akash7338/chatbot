@@ -98,4 +98,10 @@ export class AgentComponent implements OnInit {
       });
     }
   }
+
+  logout() {
+    localStorage.clear(); // or localStorage.removeItem('role') / 'username' if needed
+    window.location.href = '/login'; // OR use: this.router.navigate(['/login']);
+  }
+  
 }

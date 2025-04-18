@@ -8,5 +8,7 @@ import com.web.chatbot.entity.Agent;
 
 public interface AgentRepository extends MongoRepository<Agent, String> {
     Optional<Agent> findByUsernameAndPassword(String username, String password);
+
+    Optional<Agent> findByUsername(String username);
 }
 
