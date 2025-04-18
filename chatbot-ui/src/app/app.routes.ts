@@ -1,20 +1,13 @@
 import { Routes } from '@angular/router';
+import { LoginComponent } from './login/login.component';
+import { ChatComponent } from './chat/chat.component';
+import { AgentComponent } from './agent/agent.component';
 
 export const routes: Routes = [
-  {
-    path: '',
-    redirectTo: 'chat',
-    pathMatch: 'full'
-  },
-  {
-    path: 'chat',
-    loadComponent: () =>
-      import('./chat/chat.component').then(m => m.ChatComponent)
-  },
-  {
-    path: 'agent',
-    loadComponent: () =>
-      import('./agent/agent.component').then(m => m.AgentComponent)
-  }
+  { path: 'login', component: LoginComponent },
+  { path: 'chat', component: ChatComponent },
+  { path: 'agent', component: AgentComponent },
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
+  { path: '**', redirectTo: '/login' }
   
 ];
