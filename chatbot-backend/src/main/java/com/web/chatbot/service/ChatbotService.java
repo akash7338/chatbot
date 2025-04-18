@@ -108,7 +108,7 @@ public class ChatbotService {
         chatMessage.setTimestamp(new Date());
 
         repository.save(chatMessage);
-        insertIntoBigQuery(chatMessage);
+       // insertIntoBigQuery(chatMessage);
 
         return message;
     }

@@ -4,14 +4,19 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.web.chatbot.repository.AgentRepository;
-import com.web.chatbot.repository.UserRepository;
+import com.web.chatbot.entity.AuthRequest;
+import com.web.chatbot.service.JwtService;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -19,26 +24,32 @@ import com.web.chatbot.repository.UserRepository;
 public class AuthController {
 
     @Autowired
-    private UserRepository userRepo;
+    private AuthenticationManager authManager;
+
     @Autowired
-    private AgentRepository agentRepo;
+    private JwtService jwtService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> creds) {
-        String username = creds.get("username");
-        String password = creds.get("password");
-        String role = creds.get("role");
+    public ResponseEntity<?> login(@RequestBody AuthRequest request) {
+        try {
+            Authentication auth = authManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                    request.getUsername(), request.getPassword()
+                )
+            );
 
-        if ("user".equals(role)) {
-            return userRepo.findByUsernameAndPassword(username, password)
-                    .map(user -> ResponseEntity.ok(Map.of("status", "success", "role", "user")))
-                    .orElse(ResponseEntity.status(401).body(Map.of("status", "unauthorized")));
-        } else if ("agent".equals(role)) {
-            return agentRepo.findByUsernameAndPassword(username, password)
-                    .map(agent -> ResponseEntity.ok(Map.of("status", "success", "role", "agent")))
-                    .orElse(ResponseEntity.status(401).body(Map.of("status", "unauthorized")));
+            UserDetails userDetails = (UserDetails) auth.getPrincipal();
+            String role = userDetails.getAuthorities().iterator().next().getAuthority(); // "ROLE_USER" or "ROLE_AGENT"
+            String token = jwtService.generateToken(userDetails.getUsername(), role);
+
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "token", token,
+                "role", role
+            ));
+
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(401).body(Map.of("status", "unauthorized"));
         }
-
-        return ResponseEntity.badRequest().body(Map.of("status", "invalid_role"));
     }
 }

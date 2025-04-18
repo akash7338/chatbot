@@ -14,7 +14,6 @@ import { FormsModule } from '@angular/forms';
 export class LoginComponent {
   username = '';
   password = '';
-  role = 'user';
   errorMessage = '';
 
   constructor(private http: HttpClient, private router: Router) {}
@@ -27,15 +26,16 @@ export class LoginComponent {
 
     const payload = {
       username: this.username,
-      password: this.password,
-      role: this.role
+      password: this.password
     };
 
     this.http.post<any>('http://localhost:8080/api/auth/login', payload).subscribe({
       next: (res) => {
+        const role = res.role.replace('ROLE_', '').toLowerCase(); // e.g. ROLE_USER -> user, ROLE_AGENT -> agent
+        localStorage.setItem('token', res.token);     
+        localStorage.setItem('role', res.role);   
         localStorage.setItem('username', this.username);
-        localStorage.setItem('role', this.role);
-        this.router.navigate([`/${this.role}`]); // /chat or /agent
+        this.router.navigate([`/${role}`]);
       },
       error: () => {
         this.errorMessage = 'Invalid credentials. Please try again.';

@@ -12,14 +12,6 @@
       <input [(ngModel)]="password" type="password" placeholder="Enter your password" />
     </div>
   
-    <div class="form-group">
-      <label><i class="fas fa-user-tag"></i> Role</label>
-      <select [(ngModel)]="role">
-        <option value="user">🙋 User</option>
-        <option value="agent">👨‍💼 Agent</option>
-      </select>
-    </div>
-  
     <button class="login-btn" (click)="login()">🔐 Login</button>
   
     <div class="error" *ngIf="errorMessage">

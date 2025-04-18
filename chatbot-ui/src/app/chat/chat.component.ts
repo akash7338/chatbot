@@ -6,6 +6,7 @@ import { ChatService } from './chat.service';
 
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { Router } from '@angular/router';
 
 @Component({
   standalone: true,
@@ -26,7 +27,7 @@ export class ChatComponent implements OnInit {
 
   stompClient!: Client;
 
-  constructor(private chatService: ChatService) {}
+  constructor(private chatService: ChatService,private router: Router) {}
 
   ngOnInit() {
     this.setupWebSocketConnection();
@@ -133,4 +134,11 @@ export class ChatComponent implements OnInit {
       });
     }
   }
+
+  logout() {
+    localStorage.clear(); // or localStorage.removeItem('role') / 'username' if needed
+    // window.location.href = '/login'; 
+    this.router.navigate(['/login']);
+  }
+  
 }

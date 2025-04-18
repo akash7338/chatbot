@@ -1,5 +1,9 @@
 <div class="chatbot-wrapper">
-    <div class="chatbot-header">👨‍💼 Agent Panel</div>
+    <div class="chatbot-header">👨‍💼 Agent Panel
+      <button class="logout-btn" (click)="logout()" title="Logout">
+        <i class="fas fa-sign-out-alt"></i>
+        </button>
+    </div>
   
     <div class="chatbot-messages">
       <div *ngFor="let msg of messages" class="chat-bubble" [ngClass]="{
@@ -31,5 +35,7 @@
         />
         <button (click)="sendMessage()">➤</button>
       </div>
+
+      
       
   

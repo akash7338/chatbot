@@ -1,5 +1,9 @@
 <div class="chatbot-wrapper">
-    <div class="chatbot-header">🤖 ChatBot Assistant</div>
+    <div class="chatbot-header">🤖 ChatBot Assistant
+      <button class="logout-btn" (click)="logout()" title="Logout">
+        <i class="fas fa-sign-out-alt"></i>
+      </button>
+    </div>
   
     <div class="chatbot-messages" #scrollMe>
       <div *ngFor="let msg of messages" class="chat-bubble" [ngClass]="{
