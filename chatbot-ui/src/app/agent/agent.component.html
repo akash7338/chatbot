@@ -1,41 +1,45 @@
 <div class="chatbot-wrapper">
-    <div class="chatbot-header">👨‍💼 Agent Panel
-      <button class="logout-btn" (click)="logout()" title="Logout">
-        <i class="fas fa-sign-out-alt"></i>
-        </button>
+  <div class="chatbot-header">👨‍💼 Agent Panel
+    <button class="logout-btn" (click)="logout()" title="Logout">
+      <i class="fas fa-sign-out-alt"></i>
+    </button>
+  </div>
+
+  <div class="agent-header">
+    <div class="status-control">
+      <span class="status-indicator" [ngClass]="status"></span>
+      <select class="status-dropdown" [(ngModel)]="status" (change)="onStatusChange()">
+        <option value="live">🟢 Live</option>
+        <option value="busy">🔴 Busy</option>
+      </select>
     </div>
+  </div>
   
-    <div class="chatbot-messages">
-      <div *ngFor="let msg of messages" class="chat-bubble" [ngClass]="{
+  
+  
+
+  <div class="chatbot-messages">
+    <div *ngFor="let msg of messages" class="chat-bubble" [ngClass]="{
         'user-msg': msg.sender === role,
         'bot-msg': msg.sender !== role
       }">
-        <!-- Optional avatars -->
-        <div class="avatar" *ngIf="msg.sender !== role">
-            {{ msg.sender !== role ? '🙋' : '🤖' }}
-          </div>
-          <div class="bubble-content">
-            {{ msg.text }}
-          </div>
-        </div>
+      <!-- Optional avatars -->
+      <div class="avatar" *ngIf="msg.sender !== role">
+        {{ msg.sender !== role ? '🙋' : '🤖' }}
       </div>
-      
-      <div *ngIf="isUserTyping" class="typing-indicator">
-        🙋 Akash is typing<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+      <div class="bubble-content">
+        {{ msg.text }}
       </div>
-      
-    
-      <div class="chatbot-input">
-        <input
-          [(ngModel)]="inputText"
-          (keyup)="handleTyping()"
-          (keyup.enter)="sendMessage()"
-          (blur)="sendTyping(false)"
-          placeholder="Type your message..."
-        />
-        <button (click)="sendMessage()">➤</button>
-      </div>
+    </div>
+  </div>
 
-      
-      
-  
+  <div *ngIf="isUserTyping" class="typing-indicator">
+    🙋 Akash is typing<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+  </div>
+
+
+  <div class="chatbot-input">
+    <input [(ngModel)]="inputText" (keyup)="handleTyping()" (keyup.enter)="sendMessage()" (blur)="sendTyping(false)"
+      placeholder="Type your message..." />
+    <button (click)="sendMessage()">➤</button>
+  </div>

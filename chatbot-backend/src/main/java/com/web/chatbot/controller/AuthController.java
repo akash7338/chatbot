@@ -43,8 +43,9 @@ public class AuthController {
 
             UserDetails userDetails = (UserDetails) auth.getPrincipal();
             String role = userDetails.getAuthorities().iterator().next().getAuthority(); // "ROLE_USER" or "ROLE_AGENT"
-            // ✅ If agent, set status to live
+            // ✅ If agent logs in, set status to live
             if (role.equals("ROLE_AGENT")) {
+                System.out.println("Agent logged in with status live");
                 agentService.updateAgentStatus(userDetails.getUsername(), AgentStatus.LIVE.name());
             }
 

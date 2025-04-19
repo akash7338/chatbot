@@ -26,6 +26,17 @@ public class AgentService {
         }
     }
 
+    public String getAgentStatus(String username) {
+        Agent agent = null;
+        Optional<Agent> agentOpt = agentRepository.findByUsername(username);
+        if (agentOpt.isPresent()) {
+            agent = agentOpt.get();
+            return agent.getStatus().name();
+        }
+        return AgentStatus.OFFLINE.name();
+
+    }
+
     public List<Agent> getLiveAgents() {
         return agentRepository.findByStatus(AgentStatus.LIVE);
     }
