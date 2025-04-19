@@ -2,8 +2,6 @@ package com.web.chatbot.entity;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import com.google.protobuf.DescriptorProtos.FeatureSet.EnumType;
 import com.web.chatbot.enums.AgentStatus;
 
 @Document(collection = "agents")

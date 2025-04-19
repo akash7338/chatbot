@@ -4,24 +4,40 @@ import { FormsModule } from '@angular/forms';
 
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { HttpClient } from '@angular/common/http';
+import { AgentService } from './agent.service';
 
 @Component({
   standalone: true,
   selector: 'app-agent',
   imports: [CommonModule, FormsModule],
   templateUrl: './agent.component.html',
-  styleUrls: ['./agent.component.css']
+  styleUrls: ['./agent.component.css'],
+  providers: [AgentService] // ✅ provide the service
 })
 export class AgentComponent implements OnInit {
   role: string = 'Agent';
-  isUserTyping=false;
+  status: string = 'live'; // "live" by default
+  username: string = '';
+  isUserTyping = false;
   typingTimeout: any;
   inputText = '';
   messages: { sender: string; text: string }[] = [];
 
   stompClient!: Client;
+  constructor(private http: HttpClient, private agentService: AgentService) { }
 
   ngOnInit() {
+    this.username = localStorage.getItem('username') || '';
+
+    this.agentService.getAgentStatus(this.username).subscribe({
+      next: (res) => {
+        console.log('[Status from backend]', res.status.toLowerCase());
+        this.status = res.status.toLowerCase();
+      },
+      error: () => this.status = 'live'
+    });
+    
     this.setupWebSocketConnection();
   }
 
@@ -80,13 +96,13 @@ export class AgentComponent implements OnInit {
 
   handleTyping() {
     this.sendTyping(true);
-  
+
     clearTimeout(this.typingTimeout);
     this.typingTimeout = setTimeout(() => {
       this.sendTyping(false);
     }, 1000);
   }
-  
+
   sendTyping(isTyping: boolean) {
     if (this.stompClient && this.stompClient.connected) {
       this.stompClient.publish({
@@ -99,9 +115,23 @@ export class AgentComponent implements OnInit {
     }
   }
 
+  updateAgentStatus(status: string) {
+    const username = localStorage.getItem('username')!;
+    this.agentService.updateStatus(username, status).subscribe({
+      next: () => console.log('Status updated'),
+      error: (err) => console.error('Failed to update status', err)
+    });
+  }
+
+  onStatusChange() {
+    this.updateAgentStatus(this.status);
+  }
+  
+
+
   logout() {
     localStorage.clear(); // or localStorage.removeItem('role') / 'username' if needed
     window.location.href = '/login'; // OR use: this.router.navigate(['/login']);
   }
-  
+
 }
