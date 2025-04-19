@@ -3,13 +3,17 @@ package com.web.chatbot.entity;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.google.protobuf.DescriptorProtos.FeatureSet.EnumType;
+import com.web.chatbot.enums.AgentStatus;
+
 @Document(collection = "agents")
 public class Agent {
     @Id
     private String id;
     private String username;
     private String password;
-    private String role; // "agent"
+    private String role; // "agent
+    private AgentStatus status;
     public String getId() {
         return id;
     }
@@ -33,6 +37,12 @@ public class Agent {
     }
     public void setRole(String role) {
         this.role = role;
+    }
+    public AgentStatus getStatus() {
+        return status;
+    }
+    public void setStatus(AgentStatus status) {
+        this.status = status;
     }
 
     

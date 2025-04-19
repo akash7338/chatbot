@@ -26,4 +26,10 @@ public class WebSocketController {
         return payload;
     }
 
+    @MessageMapping("/ping")
+    @SendTo("/topic/agent-status")
+    public String handlePing(String message) {
+        return "Received: " + message;
+    }
+
 }
