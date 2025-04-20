@@ -16,7 +16,7 @@ export class LoginComponent {
   password = '';
   errorMessage = '';
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private http: HttpClient, private router: Router) { }
 
   login() {
     if (!this.username.trim() || !this.password.trim()) {
@@ -32,8 +32,8 @@ export class LoginComponent {
     this.http.post<any>('http://localhost:8080/api/auth/login', payload).subscribe({
       next: (res) => {
         const role = res.role.replace('ROLE_', '').toLowerCase(); // e.g. ROLE_USER -> user, ROLE_AGENT -> agent
-        localStorage.setItem('token', res.token);     
-        localStorage.setItem('role', res.role);   
+        localStorage.setItem('token', res.token);
+        localStorage.setItem('role', res.role);
         localStorage.setItem('username', this.username);
         this.router.navigate([`/${role}`]);
       },

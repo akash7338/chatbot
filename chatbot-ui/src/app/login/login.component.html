@@ -1,21 +1,20 @@
 <div class="login-wrapper">
-    <h2>🚀 Welcome to ChatAssist</h2>
-    <p class="subtext">Sign in to start chatting with your assistant</p>
-  
-    <div class="form-group">
-      <label><i class="fas fa-user"></i> Username</label>
-      <input [(ngModel)]="username" type="text" placeholder="Enter your username" />
-    </div>
-  
-    <div class="form-group">
-      <label><i class="fas fa-lock"></i> Password</label>
-      <input [(ngModel)]="password" type="password" placeholder="Enter your password" />
-    </div>
-  
-    <button class="login-btn" (click)="login()">🔐 Login</button>
-  
-    <div class="error" *ngIf="errorMessage">
-      {{ errorMessage }}
-    </div>
+  <h2>🚀 Welcome to ChatAssist</h2>
+  <p class="subtext">Sign in to start chatting with your assistant</p>
+
+  <div class="form-group">
+    <label><i class="fas fa-user"></i> Username</label>
+    <input [(ngModel)]="username" type="text" placeholder="Enter your username" />
   </div>
-  
+
+  <div class="form-group">
+    <label><i class="fas fa-lock"></i> Password</label>
+    <input [(ngModel)]="password" type="password" placeholder="Enter your password" />
+  </div>
+
+  <button class="login-btn" (click)="login()">🔐 Login</button>
+
+  <div class="error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+</div>

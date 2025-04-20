@@ -8,7 +8,7 @@ import { Observable } from 'rxjs';
 export class ChatService {
   private baseUrl = 'http://localhost:8080/api/chatbot';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   sendMessage(sessionId: string, message: string): Observable<string> {
     return this.http.post(`${this.baseUrl}/message/${sessionId}`, message, {
@@ -19,5 +19,5 @@ export class ChatService {
   assignAgent(sessionId: string) {
     return this.http.post<any>(`http://localhost:8080/api/assign-agent/${sessionId}`, {});
   }
-  
+
 }

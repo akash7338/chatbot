@@ -1,23 +1,22 @@
 .page-background {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-  
-  .page-content {
-    width: 100%;
-    max-width: 600px;
-    text-align: center;
-  }
-  
-  .page-title {
-    font-size: 24px;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 20px;
-    font-family: 'Segoe UI', sans-serif;
-  }
-  
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.page-content {
+  width: 100%;
+  max-width: 600px;
+  text-align: center;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20px;
+  font-family: 'Segoe UI', sans-serif;
+}

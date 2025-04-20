@@ -1,47 +1,40 @@
 <div class="chatbot-wrapper">
-    <div class="chatbot-header">🤖 ChatBot Assistant
-      <button class="logout-btn" (click)="logout()" title="Logout">
-        <i class="fas fa-sign-out-alt"></i>
-      </button>
-    </div>
-  
-    <div class="chatbot-messages" #scrollMe>
-      <div *ngFor="let msg of messages" class="chat-bubble" [ngClass]="{
+  <div class="chatbot-header">🤖 ChatBot Assistant
+    <button class="logout-btn" (click)="logout()" title="Logout">
+      <i class="fas fa-sign-out-alt"></i>
+    </button>
+  </div>
+
+  <div class="chatbot-messages" #scrollMe>
+    <div *ngFor="let msg of messages" class="chat-bubble" [ngClass]="{
           'user-msg': msg.sender === username,
           'bot-msg': msg.sender !== username
         }">
-         <!-- 👇 Avatar only for bot/agent -->
-         <div class="avatar" *ngIf="msg.sender !== username">👨‍💼</div>
+      <!-- 👇 Avatar only for bot/agent -->
+      <div class="avatar" *ngIf="msg.sender !== username">👨‍💼</div>
 
-        <div class="bubble-content">
-          {{ msg.text }}
-        </div>
-      </div>
-        
-  
-      <!-- Chat options (shown at top like chat suggestions) -->
-      <div *ngIf="showOptions" class="chat-options">
-        <button (click)="selectOption('Track Order')">📦 Track Order</button>
-        <button (click)="selectOption('Place Order')">🛒 Place Order</button>
-        <button (click)="selectOption('Agent')">💬 Talk to Agent</button>
+      <div class="bubble-content">
+        {{ msg.text }}
       </div>
     </div>
 
-            <!-- ✅ Typing Indicator goes here -->
-            <div *ngIf="isAgentTyping" class="typing-indicator">
-              👨‍💼 {{ typingUsername }} is typing<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
-            </div>
-  
-    <!-- Input box -->
-    <div class="chatbot-input">
-      <input
-        [(ngModel)]="inputText"
-        (keyup)="handleTyping()"
-        (keyup.enter)="sendMessage()"
-        (blur)="sendTyping(false)"
-        placeholder="Type your message..."
-      />
-      <button (click)="sendMessage()">➤</button>
+
+    <!-- Chat options (shown at top like chat suggestions) -->
+    <div *ngIf="showOptions" class="chat-options">
+      <button (click)="selectOption('Track Order')">📦 Track Order</button>
+      <button (click)="selectOption('Place Order')">🛒 Place Order</button>
+      <button (click)="selectOption('Agent')">💬 Talk to Agent</button>
     </div>
-    
-  
+  </div>
+
+  <!-- ✅ Typing Indicator goes here -->
+  <div *ngIf="isAgentTyping" class="typing-indicator">
+    👨‍💼 {{ typingUsername }} is typing<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+  </div>
+
+  <!-- Input box -->
+  <div class="chatbot-input">
+    <input [(ngModel)]="inputText" (keyup)="handleTyping()" (keyup.enter)="sendMessage()" (blur)="sendTyping(false)"
+      placeholder="Type your message..." />
+    <button (click)="sendMessage()">➤</button>
+  </div>

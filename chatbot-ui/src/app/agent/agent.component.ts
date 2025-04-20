@@ -40,7 +40,7 @@ export class AgentComponent implements OnInit {
       },
       error: () => this.status = 'live'
     });
-    
+
     this.setupWebSocketConnection();
   }
 
@@ -56,7 +56,7 @@ export class AgentComponent implements OnInit {
         console.log('[Agent] Connected ✅');
         this.stompClient.subscribe('/topic/agent-status', (message) => {
           const data = JSON.parse(message.body);
-          console.log("The status changed to ",data.status);
+          console.log("The status changed to ", data.status);
           if (data.username === this.username) {
             this.status = data.status.toLowerCase(); // updates UI
           }
@@ -66,15 +66,15 @@ export class AgentComponent implements OnInit {
           const data = JSON.parse(message.body);
           if (data.agent === this.username) {
             const sessionId = data.sessionId;
-        
+
             console.log('[Agent] Assigned to session:', sessionId);
-        
+
             // Subscribe to session-specific messages
             this.stompClient.subscribe(`/topic/messages/${sessionId}`, (msg) => {
               const received = JSON.parse(msg.body);
               this.messages.push({ sender: received.sender, text: received.message });
             });
-        
+
             // ✅ ✅ Subscribe to typing after assignment
             this.stompClient.subscribe(`/topic/typing/${sessionId}`, (message) => {
               const data = JSON.parse(message.body);
@@ -82,40 +82,40 @@ export class AgentComponent implements OnInit {
                 this.isUserTyping = data.typing === 'true' || data.typing === true;
                 this.typingUsername = data.sender;
               }
-            });           
-        
+            });
+
             this.assignedSessionId = sessionId;
           }
         });
-        
+
       },
       onStompError: (frame) => {
         console.error('[Agent WS] STOMP error:', frame.headers['message']);
       }
     });
-  
+
     this.stompClient.activate();
   }
-  
+
 
   sendMessage() {
     if (!this.inputText.trim() || !this.assignedSessionId) return;
-  
+
     const payload = {
       sender: this.username,
       message: this.inputText.trim(),
       sessionId: this.assignedSessionId // ✅ include sessionId
     };
-    
+
     this.stompClient.publish({
       destination: `/app/sendMessage`, // ✅ keep it generic because backend handles sending to correct session
       body: JSON.stringify(payload)
     });
-    
-  
+
+
     this.inputText = '';
   }
-  
+
 
   handleTyping() {
     this.sendTyping(true);
@@ -132,14 +132,14 @@ export class AgentComponent implements OnInit {
         destination: '/app/typing',
         body: JSON.stringify({
           sender: this.username,
-          senderType:this.role,
+          senderType: this.role,
           typing: isTyping,
           sessionId: this.assignedSessionId // ✅ required
         })
       });
     }
   }
-  
+
 
   updateAgentStatus(status: string) {
     const username = localStorage.getItem('username')!;
@@ -152,7 +152,7 @@ export class AgentComponent implements OnInit {
   onStatusChange() {
     this.updateAgentStatus(this.status);
   }
-  
+
 
 
   logout() {

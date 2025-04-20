@@ -9,7 +9,7 @@ import { Observable } from 'rxjs';
 export class AgentService {
   private baseUrl = 'http://localhost:8080/api/agent';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   updateStatus(username: string, status: string): Observable<any> {
     return this.http.post(`${this.baseUrl}/status`, { username, status });
