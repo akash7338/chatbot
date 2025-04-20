@@ -16,13 +16,16 @@ import { AgentService } from './agent.service';
   providers: [AgentService] // ✅ provide the service
 })
 export class AgentComponent implements OnInit {
-  role: string = 'Agent';
+  role: string = 'agent';
   status: string = 'live'; // "live" by default
   username: string = '';
+  typingUsername: string = '';
   isUserTyping = false;
   typingTimeout: any;
   inputText = '';
   messages: { sender: string; text: string }[] = [];
+  assignedSessionId: string | null = null;
+
 
   stompClient!: Client;
   constructor(private http: HttpClient, private agentService: AgentService) { }
@@ -42,57 +45,71 @@ export class AgentComponent implements OnInit {
   }
 
   setupWebSocketConnection() {
-    try {
-      this.stompClient = new Client({
-        webSocketFactory: () => new SockJS('http://localhost:8080/chat-websocket'),
-        reconnectDelay: 5000,
-        debug: (msg) => console.log('[Agent WS]', msg),
-        onConnect: () => {
-          console.log('[Agent] Connected ✅');
-
-          this.stompClient.subscribe('/topic/messages', (message) => {
-            const received = JSON.parse(message.body);
-            this.messages.push({ sender: received.sender, text: received.message });
-          });
-
-          this.stompClient.subscribe('/topic/typing', (message) => {
-            const data = JSON.parse(message.body);
-            console.log('[Typing] Received in agent:', data);
-            // Only care if someone else (i.e. agent) is typing
-            if (data.sender !== this.role) {
-              this.isUserTyping = data.typing === 'true' || data.typing === true;
-            }
-          });
-        },
-        onStompError: (frame) => {
-          console.error('[Agent WS] STOMP error:', frame.headers['message']);
-        }
-      });
-
-      this.stompClient.activate();
-    } catch (e) {
-      console.error('[Agent WS] Setup failed:', e);
-    }
+    this.stompClient = new Client({
+      webSocketFactory: () => new SockJS('http://localhost:8080/chat-websocket'),
+      connectHeaders: {
+        username: localStorage.getItem('username') || ''
+      },
+      reconnectDelay: 5000,
+      debug: (msg) => console.log('[Agent WS]', msg),
+      onConnect: () => {
+        console.log('[Agent] Connected ✅');
+  
+        // 💡 Wait for assigned session
+        this.stompClient.subscribe('/topic/session-assignments-all', (message) => {
+          const data = JSON.parse(message.body);
+          if (data.agent === this.username) {
+            const sessionId = data.sessionId;
+        
+            console.log('[Agent] Assigned to session:', sessionId);
+        
+            // Subscribe to session-specific messages
+            this.stompClient.subscribe(`/topic/messages/${sessionId}`, (msg) => {
+              const received = JSON.parse(msg.body);
+              this.messages.push({ sender: received.sender, text: received.message });
+            });
+        
+            // ✅ ✅ Subscribe to typing after assignment
+            this.stompClient.subscribe(`/topic/typing/${sessionId}`, (message) => {
+              const data = JSON.parse(message.body);
+              if (data.senderType !== this.role) {
+                this.isUserTyping = data.typing === 'true' || data.typing === true;
+                this.typingUsername = data.sender;
+              }
+            });
+        
+            this.assignedSessionId = sessionId;
+          }
+        });
+        
+      },
+      onStompError: (frame) => {
+        console.error('[Agent WS] STOMP error:', frame.headers['message']);
+      }
+    });
+  
+    this.stompClient.activate();
   }
+  
 
   sendMessage() {
-    if (!this.inputText.trim()) return;
-
+    if (!this.inputText.trim() || !this.assignedSessionId) return;
+  
     const payload = {
-      sender: this.role,
+      sender: this.username,
       message: this.inputText.trim(),
-      timestamp: new Date()
+      sessionId: this.assignedSessionId // ✅ include sessionId
     };
-
-    //this.messages.push({ sender: 'Agent', text: payload.message });
-
+    
     this.stompClient.publish({
-      destination: '/app/sendMessage',
+      destination: `/app/sendMessage`, // ✅ keep it generic because backend handles sending to correct session
       body: JSON.stringify(payload)
     });
-
+    
+  
     this.inputText = '';
   }
+  
 
   handleTyping() {
     this.sendTyping(true);
@@ -104,16 +121,19 @@ export class AgentComponent implements OnInit {
   }
 
   sendTyping(isTyping: boolean) {
-    if (this.stompClient && this.stompClient.connected) {
+    if (this.stompClient && this.stompClient.connected && this.assignedSessionId) {
       this.stompClient.publish({
         destination: '/app/typing',
         body: JSON.stringify({
-          sender: this.role,
-          typing: isTyping
+          sender: this.username,
+          senderType:this.role,
+          typing: isTyping,
+          sessionId: this.assignedSessionId // ✅ required
         })
       });
     }
   }
+  
 
   updateAgentStatus(status: string) {
     const username = localStorage.getItem('username')!;

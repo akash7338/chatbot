@@ -16,7 +16,7 @@ import { Router } from '@angular/router';
   styleUrls: ['./chat.component.css']
 })
 export class ChatComponent implements OnInit {
-  role: string = 'Akash';
+  role: string = 'user';
   isAgentTyping = false;
   typingTimeout: any;
   sessionId = uuid();
@@ -24,38 +24,35 @@ export class ChatComponent implements OnInit {
   showOptions = true;
   selectedFlow = '';
   messages: { sender: string; text: string }[] = [];
+  assignedAgentSessionId: string | null = null;
+  username: string = '';
+  typingUsername: string = '';
+
 
   stompClient!: Client;
 
-  constructor(private chatService: ChatService,private router: Router) {}
+  constructor(private chatService: ChatService, private router: Router) { }
 
   ngOnInit() {
+    this.username = localStorage.getItem('username') || '';
     this.setupWebSocketConnection();
     this.messages.push({ sender: 'bot', text: 'Hi! I\'m your assistant 🤖. What can I help you with today?' });
-    
+
   }
 
   setupWebSocketConnection() {
     try {
       this.stompClient = new Client({
         webSocketFactory: () => new SockJS('http://localhost:8080/chat-websocket'),
+        connectHeaders: {
+          username: localStorage.getItem('username') || ''
+        },
         reconnectDelay: 5000,
         debug: (msg) => console.log('[WebSocket Debug]', msg),
         onConnect: () => {
           console.log('[WebSocket] Connected ✅');
-          this.stompClient.subscribe('/topic/messages', (message) => {
-            const received = JSON.parse(message.body);
-            this.messages.push({ sender: received.sender, text: received.message });
-          });
 
-          this.stompClient.subscribe('/topic/typing', (message) => {
-            const data = JSON.parse(message.body);
-          
-            // Only care if user (Akash) is typing
-            if (data.sender !== this.role) {
-              this.isAgentTyping = data.typing === true || data.typing==='true';
-            }
-          });
+          // Do NOT subscribe to /topic/messages or /topic/typing here anymore!
         },
         onStompError: (frame) => {
           console.error('[WebSocket] STOMP error:', frame.headers['message']);
@@ -68,15 +65,44 @@ export class ChatComponent implements OnInit {
     }
   }
 
+
   selectOption(option: string) {
     this.selectedFlow = option;
     const displayText = option === 'Agent' ? 'Talk to an Agent' : option;
-    this.messages.push({ sender: this.role, text: displayText });
+    this.messages.push({ sender: this.username, text: displayText });
     this.showOptions = false;
 
     if (option === 'Agent') {
       this.messages.push({ sender: 'bot', text: 'Connecting you to a live agent...' });
-    } else {
+
+      // 🔁 Hit backend for assignment
+      this.chatService.assignAgent(this.sessionId).subscribe({
+        next: (res) => {
+          this.assignedAgentSessionId = this.sessionId;
+
+          // Subscribe to session-based topic
+          this.stompClient.subscribe(`/topic/messages/${this.sessionId}`, (message) => {
+            const received = JSON.parse(message.body);
+            this.messages.push({ sender: received.sender, text: received.message });
+          });
+
+          // ✅ Subscribe to session-specific typing updates
+          this.stompClient.subscribe(`/topic/typing/${this.sessionId}`, (message) => {
+            const data = JSON.parse(message.body);
+            if (data.senderType !== this.role) {
+              this.isAgentTyping = data.typing === true || data.typing === 'true';
+              this.typingUsername = data.sender;
+            }
+          });
+
+          this.messages.push({ sender: 'bot', text: 'Agent connected! You can start chatting.' });
+        },
+        error: () => {
+          this.messages.push({ sender: 'bot', text: 'All agents are currently busy. Please try again later.' });
+        }
+      });
+    }
+    else {
       this.chatService.sendMessage(this.sessionId, option).subscribe(response => {
         this.messages.push({ sender: 'bot', text: response });
       });
@@ -91,15 +117,17 @@ export class ChatComponent implements OnInit {
 
     if (this.selectedFlow === 'Agent') {
       const payload = {
-        sender: this.role,
+        sender: this.username,
         message: userText,
+        sessionId:this.assignedAgentSessionId,
         timestamp: new Date()
       };
 
       this.stompClient.publish({
-        destination: '/app/sendMessage',
+        destination: `/app/sendMessage`,
         body: JSON.stringify(payload)
       });
+
 
     } else {
       const fullMessage = `${this.selectedFlow}: ${userText}`;
@@ -116,29 +144,32 @@ export class ChatComponent implements OnInit {
 
     console.log('[Typing] handleTyping() called');
     this.sendTyping(true);
-    
+
     clearTimeout(this.typingTimeout);
     this.typingTimeout = setTimeout(() => {
       this.sendTyping(false);
     }, 1000);
   }
-  
+
   sendTyping(isTyping: boolean) {
-    if (this.stompClient && this.stompClient.connected) {
+    if (this.stompClient && this.stompClient.connected && this.assignedAgentSessionId) {
       this.stompClient.publish({
         destination: '/app/typing',
         body: JSON.stringify({
-          sender: this.role,
-          typing: isTyping
+          sender: this.username,
+          senderType:this.role,
+          typing: isTyping,
+          sessionId: this.assignedAgentSessionId
         })
       });
     }
   }
+  
 
   logout() {
     localStorage.clear(); // or localStorage.removeItem('role') / 'username' if needed
     // window.location.href = '/login'; 
     this.router.navigate(['/login']);
   }
-  
+
 }

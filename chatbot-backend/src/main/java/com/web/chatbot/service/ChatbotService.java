@@ -48,6 +48,7 @@ public class ChatbotService {
                 String response = detectIntent(sessionId, message);
                 return saveAndRespond("bot", response);
             } catch (Exception e) {
+                e.printStackTrace();
                 return saveAndRespond("bot", "I'm having trouble understanding you. Could you rephrase?");
             }
         }
@@ -71,7 +72,8 @@ public class ChatbotService {
     // Fetches order status from Delhivery API
     private String fetchDelhiveryTrackingStatus(String trackingNumber) {
         RestTemplate restTemplate = new RestTemplate();
-        String url = "https://api.delhivery.com/v1/packages/json/?waybill=" + trackingNumber + "&token=" + delhiveryApiToken;
+        String url = "https://api.delhivery.com/v1/packages/json/?waybill=" + trackingNumber + "&token="
+                + delhiveryApiToken;
 
         try {
             ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
@@ -108,7 +110,7 @@ public class ChatbotService {
         chatMessage.setTimestamp(new Date());
 
         repository.save(chatMessage);
-       // insertIntoBigQuery(chatMessage);
+        // insertIntoBigQuery(chatMessage);
 
         return message;
     }
@@ -121,8 +123,7 @@ public class ChatbotService {
                 .addRow(Map.of(
                         "sender", message.getSender(),
                         "message", message.getMessage(),
-                        "timestamp", message.getTimestamp().toString()
-                ))
+                        "timestamp", message.getTimestamp().toString()))
                 .build();
 
         bigQuery.insertAll(insertRequest);

@@ -11,6 +11,7 @@ public class ChatMessage {
     private String id;
     private String sender;
     private String message;
+    private String sessionId;
     private Date timestamp;
 
     public String getId() {
@@ -45,5 +46,12 @@ public class ChatMessage {
         this.timestamp = timestamp;
     }
 
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
+    }
 
 }

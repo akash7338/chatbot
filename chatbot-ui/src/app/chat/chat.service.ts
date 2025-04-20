@@ -15,4 +15,9 @@ export class ChatService {
       responseType: 'text'
     });
   }
+
+  assignAgent(sessionId: string) {
+    return this.http.post<any>(`http://localhost:8080/api/assign-agent/${sessionId}`, {});
+  }
+  
 }

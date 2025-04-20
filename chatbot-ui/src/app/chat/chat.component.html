@@ -7,11 +7,11 @@
   
     <div class="chatbot-messages" #scrollMe>
       <div *ngFor="let msg of messages" class="chat-bubble" [ngClass]="{
-          'user-msg': msg.sender === role,
-          'bot-msg': msg.sender !== role
+          'user-msg': msg.sender === username,
+          'bot-msg': msg.sender !== username
         }">
          <!-- 👇 Avatar only for bot/agent -->
-         <div class="avatar" *ngIf="msg.sender !== role">👨‍💼</div>
+         <div class="avatar" *ngIf="msg.sender !== username">👨‍💼</div>
 
         <div class="bubble-content">
           {{ msg.text }}
@@ -29,7 +29,7 @@
 
             <!-- ✅ Typing Indicator goes here -->
             <div *ngIf="isAgentTyping" class="typing-indicator">
-              👨‍💼 Agent is typing<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+              👨‍💼 {{ typingUsername }} is typing<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
             </div>
   
     <!-- Input box -->

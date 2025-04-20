@@ -20,12 +20,12 @@
 
   <div class="chatbot-messages">
     <div *ngFor="let msg of messages" class="chat-bubble" [ngClass]="{
-        'user-msg': msg.sender === role,
-        'bot-msg': msg.sender !== role
+        'user-msg': msg.sender === username,
+        'bot-msg': msg.sender !== username
       }">
       <!-- Optional avatars -->
-      <div class="avatar" *ngIf="msg.sender !== role">
-        {{ msg.sender !== role ? '🙋' : '🤖' }}
+      <div class="avatar" *ngIf="msg.sender !== username">
+        {{ msg.sender !== username ? '🙋' : '🤖' }}
       </div>
       <div class="bubble-content">
         {{ msg.text }}
@@ -34,7 +34,7 @@
   </div>
 
   <div *ngIf="isUserTyping" class="typing-indicator">
-    🙋 Akash is typing<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+    🙋 {{ typingUsername }} is typing<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
   </div>
 
 

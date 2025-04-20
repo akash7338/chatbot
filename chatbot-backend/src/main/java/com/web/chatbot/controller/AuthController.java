@@ -19,6 +19,7 @@ import com.web.chatbot.entity.AuthRequest;
 import com.web.chatbot.enums.AgentStatus;
 import com.web.chatbot.service.AgentService;
 import com.web.chatbot.service.JwtService;
+import com.web.chatbot.service.UserToAgentAssignmentService;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -34,6 +35,9 @@ public class AuthController {
     @Autowired
     private AgentService agentService;
 
+    @Autowired
+    private UserToAgentAssignmentService assignmentService;
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
         try {
@@ -47,6 +51,7 @@ public class AuthController {
             if (role.equals("ROLE_AGENT")) {
                 System.out.println("Agent logged in with status live");
                 agentService.updateAgentStatus(userDetails.getUsername(), AgentStatus.LIVE.name());
+                assignmentService.registerLiveAgent(userDetails.getUsername());
             }
 
             String token = jwtService.generateToken(userDetails.getUsername(), role);
