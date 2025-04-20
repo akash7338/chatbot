@@ -19,6 +19,7 @@ public class AgentStatusBroadcaster {
         payload.put("status", status);
 
         // Send to a topic, e.g. /topic/agent-status
+        System.out.println("Status Message Broadcasted "+status);
         messagingTemplate.convertAndSend("/topic/agent-status", payload);
     }
 }

@@ -1,6 +1,8 @@
 
 package com.web.chatbot.controller;
 
+import com.web.chatbot.component.AgentStatusBroadcaster;
+import com.web.chatbot.enums.AgentStatus;
 import com.web.chatbot.service.AgentService;
 import com.web.chatbot.service.UserToAgentAssignmentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,13 +26,18 @@ public class UserToAgentAssignmentController {
     @Autowired
     private AgentService agentService;
 
+    @Autowired
+    AgentStatusBroadcaster agentStatusBroadcaster;
+
     @PostMapping("/{sessionId}")
     public ResponseEntity<?> assignAgent(@PathVariable String sessionId) {
         String assignedAgent = assignmentService.assignAgentToSession(sessionId);
 
         if (assignedAgent != null) {
             // ✅ Agent status update done here instead of inside the service
-            agentService.updateAgentStatus(assignedAgent, "BUSY");
+            agentService.updateAgentStatus(assignedAgent, AgentStatus.BUSY.name());
+            agentStatusBroadcaster.broadcastStatusUpdate(assignedAgent, AgentStatus.BUSY.name());
+
 
             messagingTemplate.convertAndSend(
                     "/topic/session-assignments-all",

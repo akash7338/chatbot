@@ -54,7 +54,13 @@ export class AgentComponent implements OnInit {
       debug: (msg) => console.log('[Agent WS]', msg),
       onConnect: () => {
         console.log('[Agent] Connected ✅');
-  
+        this.stompClient.subscribe('/topic/agent-status', (message) => {
+          const data = JSON.parse(message.body);
+          console.log("The status changed to ",data.status);
+          if (data.username === this.username) {
+            this.status = data.status.toLowerCase(); // updates UI
+          }
+        });
         // 💡 Wait for assigned session
         this.stompClient.subscribe('/topic/session-assignments-all', (message) => {
           const data = JSON.parse(message.body);
@@ -76,7 +82,7 @@ export class AgentComponent implements OnInit {
                 this.isUserTyping = data.typing === 'true' || data.typing === true;
                 this.typingUsername = data.sender;
               }
-            });
+            });           
         
             this.assignedSessionId = sessionId;
           }
