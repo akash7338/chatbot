@@ -35,56 +35,69 @@ export class ChatComponent implements OnInit {
 
   ngOnInit() {
     const storedSession = localStorage.getItem('sessionId');
-    this.sessionId = storedSession || uuid(); // 👈 use existing session or generate new
+    this.sessionId = storedSession || uuid();
     localStorage.setItem('sessionId', this.sessionId);
-    
+  
     this.username = localStorage.getItem('username') || '';
     this.setupWebSocketConnection();
-    this.messages.push({ sender: 'bot', text: 'Hi! I\'m your assistant 🤖. What can I help you with today?' });
   
-    // const selectedFlow = localStorage.getItem('selectedFlow');
-    // if (selectedFlow) {
-    //   this.selectedFlow = selectedFlow;
-    //   this.showOptions = false;
-    //   if (selectedFlow === 'Agent') {
-    //     this.reconnectToAgentSession();
-    //   } else {
-    //     this.messages.push({ sender: 'bot', text: 'Welcome back! Continue your session.' });
-    //   }
-    // } else {
-    //   this.messages.push({ sender: 'bot', text: 'Hi! I\'m your assistant 🤖. What can I help you with today?' });
-    // }
-  }
+    const selectedFlow = localStorage.getItem('selectedFlow');
+    if (selectedFlow) {
+      this.selectedFlow = selectedFlow;
+      this.showOptions = false;
   
-  setupWebSocketConnection() {
-    try {
-      this.stompClient = new Client({
-        webSocketFactory: () => new SockJS('http://localhost:8080/chat-websocket'),
-        connectHeaders: {
-          username: localStorage.getItem('username') || ''
-        },
-        reconnectDelay: 5000,
-        debug: (msg) => console.log('[WebSocket Debug]', msg),
-        onConnect: () => {
-          console.log('[WebSocket] Connected ✅');
-
-          // Do NOT subscribe to /topic/messages or /topic/typing here anymore!
-        },
-        onStompError: (frame) => {
-          console.error('[WebSocket] STOMP error:', frame.headers['message']);
-        }
-      });
-
-      this.stompClient.activate();
-    } catch (e) {
-      console.error('[WebSocket] Setup failed:', e);
+      if (selectedFlow !== 'Agent') {
+        this.messages.push({ sender: 'bot', text: 'Welcome back! Continue your session.' });
+      }
+      // ✅ For Agent, reconnect will be called only when WS is connected
+    } else {
+      this.messages.push({ sender: 'bot', text: 'Hi! I\'m your assistant 🤖. What can I help you with today?' });
     }
   }
+  
+  
+  setupWebSocketConnection() {
+    this.stompClient = new Client({
+      webSocketFactory: () => new SockJS('http://localhost:8080/chat-websocket'),
+      connectHeaders: {
+        username: localStorage.getItem('username') || ''
+      },
+      reconnectDelay: 5000, // 🔁 Reconnect every 5s
+      debug: (msg) => console.log('[WebSocket Debug]', msg),
+  
+      onConnect: () => {
+        console.log('[WebSocket] Connected ✅');
+  
+        // 🧠 Only reconnect if Agent flow is active
+        //keep any subscribe inside onconnect because chances are u subscribe even without a stomp connection
+        //or subscribe after you are sure that the STOMP conn is established
+        const selectedFlow = localStorage.getItem('selectedFlow');
+        if (selectedFlow === 'Agent') {
+          this.reconnectToAgentSession();
+        }
+      },
+  
+      onStompError: (frame) => {
+        console.error('[STOMP Protocol Error]', frame.headers['message']);
+      },
+  
+      onWebSocketError: (event) => {
+        console.error('[WebSocket Connection Error]', event);
+      },
+  
+      onWebSocketClose: (event) => {
+        console.warn('[WebSocket Closed]', event.reason || 'no reason');
+      }
+    });
+  
+    this.stompClient.activate();
+  }
+  
 
 
   selectOption(option: string) {
     this.selectedFlow = option;
-    //localStorage.setItem('selectedFlow', option);
+    localStorage.setItem('selectedFlow', option);
     const displayText = option === 'Agent' ? 'Talk to an Agent' : option;
     this.messages.push({ sender: this.username, text: displayText });
     this.showOptions = false;
@@ -182,25 +195,25 @@ export class ChatComponent implements OnInit {
     }
   }
 
-  // reconnectToAgentSession() {
-  //   this.assignedAgentSessionId = localStorage.getItem('sessionId');
-  //   if (!this.assignedAgentSessionId) return;
+  reconnectToAgentSession() {
+    this.assignedAgentSessionId = localStorage.getItem('sessionId');
+    if (!this.assignedAgentSessionId) return;
   
-  //   this.stompClient.subscribe(`/topic/messages/${this.assignedAgentSessionId}`, (message) => {
-  //     const received = JSON.parse(message.body);
-  //     this.messages.push({ sender: received.sender, text: received.message });
-  //   });
+    this.stompClient.subscribe(`/topic/messages/${this.assignedAgentSessionId}`, (message) => {
+      const received = JSON.parse(message.body);
+      this.messages.push({ sender: received.sender, text: received.message });
+    });
   
-  //   this.stompClient.subscribe(`/topic/typing/${this.assignedAgentSessionId}`, (message) => {
-  //     const data = JSON.parse(message.body);
-  //     if (data.senderType !== this.role) {
-  //       this.isAgentTyping = data.typing === true || data.typing === 'true';
-  //       this.typingUsername = data.sender;
-  //     }
-  //   });
+    this.stompClient.subscribe(`/topic/typing/${this.assignedAgentSessionId}`, (message) => {
+      const data = JSON.parse(message.body);
+      if (data.senderType !== this.role) {
+        this.isAgentTyping = data.typing === true || data.typing === 'true';
+        this.typingUsername = data.sender;
+      }
+    });
   
-  //   this.messages.push({ sender: 'bot', text: 'Reconnected to agent session. ✅' });
-  // }
+    this.messages.push({ sender: 'bot', text: 'Reconnected to agent session. ✅' });
+  }
   
   
 
