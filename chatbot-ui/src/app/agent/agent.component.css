@@ -227,3 +227,20 @@
   font-size: 14px;
   background-color: white;
 }
+
+.offer-popup {
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  padding: 1rem;
+  margin: 1rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.offer-buttons button {
+  margin: 0 0.5rem;
+  padding: 0.4rem 0.8rem;
+  font-weight: bold;
+}
+
+

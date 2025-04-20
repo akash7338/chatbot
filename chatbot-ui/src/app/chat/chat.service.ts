@@ -16,7 +16,7 @@ export class ChatService {
     });
   }
 
-  assignAgent(sessionId: string) {
+  offerSessionToAgents(sessionId: string) {
     return this.http.post<any>(`http://localhost:8080/api/assign-agent/${sessionId}`, {});
   }
 

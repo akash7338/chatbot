@@ -19,7 +19,6 @@ import com.web.chatbot.entity.AuthRequest;
 import com.web.chatbot.enums.AgentStatus;
 import com.web.chatbot.service.AgentService;
 import com.web.chatbot.service.JwtService;
-import com.web.chatbot.service.UserToAgentAssignmentService;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -35,9 +34,6 @@ public class AuthController {
     @Autowired
     private AgentService agentService;
 
-    @Autowired
-    private UserToAgentAssignmentService assignmentService;
-
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
         try {
@@ -49,9 +45,11 @@ public class AuthController {
             String role = userDetails.getAuthorities().iterator().next().getAuthority(); // "ROLE_USER" or "ROLE_AGENT"
             // ✅ If agent logs in, set status to live
             if (role.equals("ROLE_AGENT")) {
-                System.out.println("Agent logged in with status live");
+                System.out.println(userDetails.getUsername() + " logged in with live status");
                 agentService.updateAgentStatus(userDetails.getUsername(), AgentStatus.LIVE.name());
             }
+
+            System.out.println(userDetails.getUsername() + " role " + role + " logged in");
 
             String token = jwtService.generateToken(userDetails.getUsername(), role);
 
@@ -64,4 +62,13 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("status", "unauthorized"));
         }
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logoutAgent(@RequestBody Map<String, String> body) {
+        String username = body.get("username");
+        agentService.updateAgentStatus(username, AgentStatus.OFFLINE.name());
+        System.out.println(username + " logged out successfully");
+        return ResponseEntity.ok().build();
+    }
+
 }

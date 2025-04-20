@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.web.chatbot.component.AgentStatusBroadcaster;
 import com.web.chatbot.service.AgentService;
 
 @RestController
@@ -22,6 +23,9 @@ public class AgentController {
     @Autowired
     private AgentService agentService;
 
+    @Autowired
+    private AgentStatusBroadcaster agentStatusBroadcaster;
+
     @PostMapping("/status")
     public ResponseEntity<?> updateStatus(@RequestBody Map<String, String> body) {
         String username = body.get("username");
@@ -30,7 +34,7 @@ public class AgentController {
         System.out.println("Status updated for "+username+ " status "+status);
 
         // Optionally broadcast via WebSocket
-        // agentStatusBroadcaster.broadcastStatusUpdate(username, status);
+         agentStatusBroadcaster.broadcastStatusUpdate(username, status);
 
         return ResponseEntity.ok().build();
     }

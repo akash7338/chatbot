@@ -94,7 +94,60 @@ export class ChatComponent implements OnInit {
   }
 
 
+  // old implementation where we listened to assigmnents-all and liveagent Queue from backend pulled
+  // first agent and send it as payload to this topic and if the logged in user and the payload user
+  //  were same it got assigned
 
+  // selectOption(option: string) {
+  //   this.selectedFlow = option;
+  //   localStorage.setItem('selectedFlow', option);
+  //   const displayText = option === 'Agent' ? 'Talk to an Agent' : option;
+  //   this.messages.push({ sender: this.username, text: displayText });
+  //   this.showOptions = false;
+
+  //   if (option === 'Agent') {
+  //     this.messages.push({ sender: 'bot', text: 'Connecting you to a live agent...' });
+
+  //     // 🔁 Send session offer to backend
+  //     this.chatService.offerSessionToAgents(this.sessionId).subscribe({
+  //       next: () => {
+  //         this.messages.push({ sender: 'bot', text: 'Waiting for an available agent to accept...' });
+
+  //         // ✅ Subscribe to agent assignment confirmation (if not already done)
+  //         this.stompClient.subscribe('/topic/session-assignments-all', (message) => {
+  //           const data = JSON.parse(message.body);
+  //           if (data.sessionId === this.sessionId && data.agent) {
+  //             this.assignedAgentSessionId = this.sessionId;
+
+  //             // 💬 Subscribe to messages
+  //             this.stompClient.subscribe(`/topic/messages/${this.sessionId}`, (msg) => {
+  //               const received = JSON.parse(msg.body);
+  //               this.messages.push({ sender: received.sender, text: received.message });
+  //             });
+
+  //             // ✍️ Subscribe to typing indicators
+  //             this.stompClient.subscribe(`/topic/typing/${this.sessionId}`, (typing) => {
+  //               const data = JSON.parse(typing.body);
+  //               if (data.senderType !== this.role) {
+  //                 this.isAgentTyping = data.typing === true || data.typing === 'true';
+  //                 this.typingUsername = data.sender;
+  //               }
+  //             });
+
+  //             this.messages.push({ sender: 'bot', text: `Agent ${data.agent} accepted your request. ✅` });
+  //           }
+  //         });
+  //       },
+  //       error: () => {
+  //         this.messages.push({ sender: 'bot', text: 'All agents are currently busy. Please try again later.' });
+  //       }
+  //     });
+  //   } else {
+  //     this.chatService.sendMessage(this.sessionId, option).subscribe(response => {
+  //       this.messages.push({ sender: 'bot', text: response });
+  //     });
+  //   }
+  // }
   selectOption(option: string) {
     this.selectedFlow = option;
     localStorage.setItem('selectedFlow', option);
@@ -105,39 +158,47 @@ export class ChatComponent implements OnInit {
     if (option === 'Agent') {
       this.messages.push({ sender: 'bot', text: 'Connecting you to a live agent...' });
 
-      // 🔁 Hit backend for assignment
-      this.chatService.assignAgent(this.sessionId).subscribe({
-        next: (res) => {
-          this.assignedAgentSessionId = this.sessionId;
+      // 🔁 Send session offer to backend
+      this.chatService.offerSessionToAgents(this.sessionId).subscribe({
+        next: () => {
+          this.messages.push({ sender: 'bot', text: 'Waiting for an available agent to accept...' });
 
-          // Subscribe to session-based topic
-          this.stompClient.subscribe(`/topic/messages/${this.sessionId}`, (message) => {
-            const received = JSON.parse(message.body);
-            this.messages.push({ sender: received.sender, text: received.message });
-          });
-
-          // ✅ Subscribe to session-specific typing updates
-          this.stompClient.subscribe(`/topic/typing/${this.sessionId}`, (message) => {
+          // ✅ Subscribe to assignment confirmation
+          this.stompClient.subscribe(`/topic/session-assigned/${this.sessionId}`, (message) => {
             const data = JSON.parse(message.body);
-            if (data.senderType !== this.role) {
-              this.isAgentTyping = data.typing === true || data.typing === 'true';
-              this.typingUsername = data.sender;
-            }
-          });
+            const agent = data.agent;
 
-          this.messages.push({ sender: 'bot', text: 'Agent connected! You can start chatting.' });
+            this.assignedAgentSessionId = this.sessionId;
+
+            // 💬 Subscribe to session messages
+            this.stompClient.subscribe(`/topic/messages/${this.sessionId}`, (msg) => {
+              const received = JSON.parse(msg.body);
+              this.messages.push({ sender: received.sender, text: received.message });
+            });
+
+            // ✍️ Subscribe to typing indicators
+            this.stompClient.subscribe(`/topic/typing/${this.sessionId}`, (typing) => {
+              const data = JSON.parse(typing.body);
+              if (data.senderType !== this.role) {
+                this.isAgentTyping = data.typing === true || data.typing === 'true';
+                this.typingUsername = data.sender;
+              }
+            });
+
+            this.messages.push({ sender: 'bot', text: `Agent ${agent} accepted your request. ✅` });
+          });
         },
         error: () => {
           this.messages.push({ sender: 'bot', text: 'All agents are currently busy. Please try again later.' });
         }
       });
-    }
-    else {
+    } else {
       this.chatService.sendMessage(this.sessionId, option).subscribe(response => {
         this.messages.push({ sender: 'bot', text: response });
       });
     }
   }
+
 
   sendMessage() {
     if (!this.inputText.trim()) return;

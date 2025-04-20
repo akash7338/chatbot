@@ -11,11 +11,20 @@
       <select class="status-dropdown" [(ngModel)]="status" (change)="onStatusChange()">
         <option value="live">🟢 Live</option>
         <option value="busy">🔴 Busy</option>
+        <option value="offline">⚫ Offline</option>
       </select>
     </div>
   </div>
 
 
+<!-- 🔔 Offer Popup -->
+<div *ngIf="showOfferPopup" class="offer-popup">
+  <p>New chat session offered! Accept within {{ offerCountdown }}s</p>
+  <div class="offer-buttons">
+    <button (click)="acceptOffer()">✅ Accept</button>
+    <button (click)="declineOffer()">❌ Decline</button>
+  </div>
+</div>
 
 
   <div class="chatbot-messages">
