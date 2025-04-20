@@ -51,7 +51,6 @@ public class AuthController {
             if (role.equals("ROLE_AGENT")) {
                 System.out.println("Agent logged in with status live");
                 agentService.updateAgentStatus(userDetails.getUsername(), AgentStatus.LIVE.name());
-                assignmentService.registerLiveAgent(userDetails.getUsername());
             }
 
             String token = jwtService.generateToken(userDetails.getUsername(), role);

@@ -16,6 +16,9 @@ public class AgentService {
     @Autowired
     private AgentRepository agentRepository;
 
+    @Autowired
+    private UserToAgentAssignmentService assignmentService;
+
     public void updateAgentStatus(String username, String statusStr) {
         Optional<Agent> agentOpt = agentRepository.findByUsername(username);
         if (agentOpt.isPresent()) {
@@ -23,6 +26,13 @@ public class AgentService {
             AgentStatus status = AgentStatus.valueOf(statusStr.toUpperCase());
             agent.setStatus(status);
             agentRepository.save(agent);
+    
+            // ✅ Update in-memory availability
+            if (status == AgentStatus.LIVE) {
+                assignmentService.registerLiveAgent(username);
+            } else {
+                assignmentService.unregisterLiveAgent(username);
+            }
         }
     }
 

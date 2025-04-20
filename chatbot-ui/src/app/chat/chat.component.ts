@@ -19,7 +19,7 @@ export class ChatComponent implements OnInit {
   role: string = 'user';
   isAgentTyping = false;
   typingTimeout: any;
-  sessionId = uuid();
+  sessionId :string =' ';
   inputText = '';
   showOptions = true;
   selectedFlow = '';
@@ -34,12 +34,28 @@ export class ChatComponent implements OnInit {
   constructor(private chatService: ChatService, private router: Router) { }
 
   ngOnInit() {
+    const storedSession = localStorage.getItem('sessionId');
+    this.sessionId = storedSession || uuid(); // 👈 use existing session or generate new
+    localStorage.setItem('sessionId', this.sessionId);
+    
     this.username = localStorage.getItem('username') || '';
     this.setupWebSocketConnection();
     this.messages.push({ sender: 'bot', text: 'Hi! I\'m your assistant 🤖. What can I help you with today?' });
-
+  
+    // const selectedFlow = localStorage.getItem('selectedFlow');
+    // if (selectedFlow) {
+    //   this.selectedFlow = selectedFlow;
+    //   this.showOptions = false;
+    //   if (selectedFlow === 'Agent') {
+    //     this.reconnectToAgentSession();
+    //   } else {
+    //     this.messages.push({ sender: 'bot', text: 'Welcome back! Continue your session.' });
+    //   }
+    // } else {
+    //   this.messages.push({ sender: 'bot', text: 'Hi! I\'m your assistant 🤖. What can I help you with today?' });
+    // }
   }
-
+  
   setupWebSocketConnection() {
     try {
       this.stompClient = new Client({
@@ -68,6 +84,7 @@ export class ChatComponent implements OnInit {
 
   selectOption(option: string) {
     this.selectedFlow = option;
+    //localStorage.setItem('selectedFlow', option);
     const displayText = option === 'Agent' ? 'Talk to an Agent' : option;
     this.messages.push({ sender: this.username, text: displayText });
     this.showOptions = false;
@@ -164,6 +181,27 @@ export class ChatComponent implements OnInit {
       });
     }
   }
+
+  // reconnectToAgentSession() {
+  //   this.assignedAgentSessionId = localStorage.getItem('sessionId');
+  //   if (!this.assignedAgentSessionId) return;
+  
+  //   this.stompClient.subscribe(`/topic/messages/${this.assignedAgentSessionId}`, (message) => {
+  //     const received = JSON.parse(message.body);
+  //     this.messages.push({ sender: received.sender, text: received.message });
+  //   });
+  
+  //   this.stompClient.subscribe(`/topic/typing/${this.assignedAgentSessionId}`, (message) => {
+  //     const data = JSON.parse(message.body);
+  //     if (data.senderType !== this.role) {
+  //       this.isAgentTyping = data.typing === true || data.typing === 'true';
+  //       this.typingUsername = data.sender;
+  //     }
+  //   });
+  
+  //   this.messages.push({ sender: 'bot', text: 'Reconnected to agent session. ✅' });
+  // }
+  
   
 
   logout() {
