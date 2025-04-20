@@ -1,6 +1,7 @@
 
 package com.web.chatbot.controller;
 
+import com.web.chatbot.service.AgentService;
 import com.web.chatbot.service.UserToAgentAssignmentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,15 +21,20 @@ public class UserToAgentAssignmentController {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
+    @Autowired
+    private AgentService agentService;
+
     @PostMapping("/{sessionId}")
     public ResponseEntity<?> assignAgent(@PathVariable String sessionId) {
         String assignedAgent = assignmentService.assignAgentToSession(sessionId);
 
         if (assignedAgent != null) {
+            // ✅ Agent status update done here instead of inside the service
+            agentService.updateAgentStatus(assignedAgent, "BUSY");
+
             messagingTemplate.convertAndSend(
-                "/topic/session-assignments-all",
-                Map.of("sessionId", sessionId, "agent", assignedAgent)
-            );
+                    "/topic/session-assignments-all",
+                    Map.of("agent", assignedAgent, "sessionId", sessionId));
 
             return ResponseEntity.ok(Map.of(
                     "status", "assigned",

@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.web.chatbot.entity.SessionUserAgentAssignment;
-import com.web.chatbot.enums.AgentStatus;
 import com.web.chatbot.repository.SessionAgentUserAssignmentRepository;
 
 import java.util.*;
@@ -15,9 +14,6 @@ public class UserToAgentAssignmentService {
 
     @Autowired
     private SessionAgentUserAssignmentRepository sessionAgentUserAssignmentRepository;
-
-    @Autowired
-    private AgentService agentService;
 
     private final Map<String, String> sessionToAgentMap = new ConcurrentHashMap<>();
     private final Queue<String> availableAgents = new LinkedList<>();
@@ -53,7 +49,6 @@ public class UserToAgentAssignmentService {
         if (agent != null) {
             sessionToAgentMap.put(sessionId, agent);
             // 💾 Save to Mongo
-            agentService.updateAgentStatus(agent, AgentStatus.BUSY.name());
             SessionUserAgentAssignment assignment = new SessionUserAgentAssignment(sessionId, agent);
             sessionAgentUserAssignmentRepository.save(assignment);
         }
