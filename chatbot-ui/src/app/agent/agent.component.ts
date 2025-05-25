@@ -128,8 +128,9 @@ export class AgentComponent implements OnInit ,OnDestroy{
         // ✅ Agent status updates
         this.stompClient.subscribe('/topic/agent-status', (message) => {
           const data = JSON.parse(message.body);
+          console.log("The status changed to ", data.status);
           if (data.username === this.username) {
-            this.status = data.status.toLowerCase();
+            this.status = data.status.toLowerCase(); // updates UI
           }
         });
 
@@ -137,6 +138,7 @@ export class AgentComponent implements OnInit ,OnDestroy{
         this.stompClient.subscribe('/topic/session-assignments-all', (message) => {
           const data = JSON.parse(message.body);
           if (data.agent === this.username) {
+            console.log('[Agent] Received session offer:', data);
             this.pendingSessionOffer = {
               sessionId: data.sessionId,
               expiresIn: data.expiresIn || 10
@@ -262,6 +264,7 @@ export class AgentComponent implements OnInit ,OnDestroy{
   
 
   subscribeToSession(sessionId: string) {
+      //this is the topic where the user will send the messages to the agent
     this.stompClient.subscribe(`/topic/messages/${sessionId}`, (msg) => {
       const received = JSON.parse(msg.body);
       this.messages.push({ sender: received.sender, text: received.message });
