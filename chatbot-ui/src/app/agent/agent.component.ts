@@ -128,22 +128,24 @@ export class AgentComponent implements OnInit ,OnDestroy{
         // ✅ Agent status updates
         this.stompClient.subscribe('/topic/agent-status', (message) => {
           const data = JSON.parse(message.body);
+          console.log("The status changed to ", data.status);
           if (data.username === this.username) {
-            this.status = data.status.toLowerCase();
+            this.status = data.status.toLowerCase(); // updates UI
           }
         });
 
-        // ✅ New session offer with confirm/decline
-        this.stompClient.subscribe('/topic/session-assignments-all', (message) => {
+        // ✅ Subscribe to agent-specific session offers
+        console.log('[Agent] Subscribing to /topic/session-offers/' + this.username);
+        this.stompClient.subscribe('/topic/session-offers/' + this.username, (message) => {
+          console.log('[Agent] ====== Received Session Offer ======');
           const data = JSON.parse(message.body);
-          if (data.agent === this.username) {
-            this.pendingSessionOffer = {
-              sessionId: data.sessionId,
-              expiresIn: data.expiresIn || 10
-            };
-            this.showOfferPopup = true;
-            this.startCountdownTimer(data.expiresIn);
-          }
+          this.pendingSessionOffer = {
+            sessionId: data.sessionId,
+            expiresIn: data.expiresIn || 10
+          };
+          this.showOfferPopup = true;
+          this.startCountdownTimer(data.expiresIn);
+          console.log('[Agent] ====== Offer Processed ======');
         });
       },
       onStompError: (frame) => {
@@ -262,6 +264,7 @@ export class AgentComponent implements OnInit ,OnDestroy{
   
 
   subscribeToSession(sessionId: string) {
+      //this is the topic where the user will send the messages to the agent
     this.stompClient.subscribe(`/topic/messages/${sessionId}`, (msg) => {
       const received = JSON.parse(msg.body);
       this.messages.push({ sender: received.sender, text: received.message });

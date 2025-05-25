@@ -170,13 +170,14 @@ export class ChatComponent implements OnInit {
 
             this.assignedAgentSessionId = this.sessionId;
 
-            // 💬 Subscribe to session messages
+            // 💬 Subscribe to session messages 
+            //this topic is used by the user to listen to the messages from the agent
             this.stompClient.subscribe(`/topic/messages/${this.sessionId}`, (msg) => {
               const received = JSON.parse(msg.body);
               this.messages.push({ sender: received.sender, text: received.message });
             });
 
-            // ✍️ Subscribe to typing indicators
+            // ✍️ Subscribe to typing indicators 
             this.stompClient.subscribe(`/topic/typing/${this.sessionId}`, (typing) => {
               const data = JSON.parse(typing.body);
               if (data.senderType !== this.role) {
