@@ -52,9 +52,11 @@ public class UserToAgentAssignmentService {
      */
     public synchronized void registerLiveAgent(String agentUsername) {
         if (!availableAgentsList.contains(agentUsername)) {
-            System.out.println("Agent "+ agentUsername+" registered to live agent list");
+            System.out.println("[Agent] ====== Registering Live Agent ======");
+            System.out.println("[Agent] Username: " + agentUsername);
+            System.out.println("[Agent] Current available agents: " + availableAgentsList);
             availableAgentsList.add(agentUsername);
-        }
+                    }
     }
 
     /**
@@ -64,6 +66,8 @@ public class UserToAgentAssignmentService {
     public synchronized void unregisterLiveAgent(String agentUsername) {
         System.out.println("Agent "+agentUsername+" removed from live agent list");
         availableAgentsList.remove(agentUsername);
+        System.out.println("[Agent] Updated available agents: " + availableAgentsList);
+        System.out.println("[Agent] ====== Agent Unregistered ======");
     }
 
     /**
@@ -107,15 +111,16 @@ public class UserToAgentAssignmentService {
     
         activeSessionOffers.put(sessionId, offer);
     
-        // Notify the agent about the offer using user-specific messaging
-        System.out.println("Sending session offer to agent: " + selectedAgent + " for session: " + sessionId);
+        // Notify the agent about the offer using regular topic
+        System.out.println("Sending session offer to agent: " + selectedAgent);
+        System.out.println("[Offer] Destination: /topic/session-offers/" + selectedAgent);
 
-        messagingTemplate.convertAndSend("/topic/session-assignments-all", Map.of(
+        messagingTemplate.convertAndSend("/topic/session-offers/" + selectedAgent, Map.of(
                 "sessionId", sessionId,
-                "expiresIn", 10,
-                "agent", selectedAgent
+                "expiresIn", 10
             )
         );
+        System.out.println("[Offer] ====== Offer Sent ======");
     
         // Schedule a timeout task to handle non-response
         ScheduledFuture<?> task = scheduler.getScheduler().schedule(() -> handleTimeout(sessionId), 10, TimeUnit.SECONDS);

@@ -134,18 +134,18 @@ export class AgentComponent implements OnInit ,OnDestroy{
           }
         });
 
-        // ✅ New session offer with confirm/decline
-        this.stompClient.subscribe('/topic/session-assignments-all', (message) => {
+        // ✅ Subscribe to agent-specific session offers
+        console.log('[Agent] Subscribing to /topic/session-offers/' + this.username);
+        this.stompClient.subscribe('/topic/session-offers/' + this.username, (message) => {
+          console.log('[Agent] ====== Received Session Offer ======');
           const data = JSON.parse(message.body);
-          if (data.agent === this.username) {
-            console.log('[Agent] Received session offer:', data);
-            this.pendingSessionOffer = {
-              sessionId: data.sessionId,
-              expiresIn: data.expiresIn || 10
-            };
-            this.showOfferPopup = true;
-            this.startCountdownTimer(data.expiresIn);
-          }
+          this.pendingSessionOffer = {
+            sessionId: data.sessionId,
+            expiresIn: data.expiresIn || 10
+          };
+          this.showOfferPopup = true;
+          this.startCountdownTimer(data.expiresIn);
+          console.log('[Agent] ====== Offer Processed ======');
         });
       },
       onStompError: (frame) => {
