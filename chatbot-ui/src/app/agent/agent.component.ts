@@ -1,11 +1,10 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import { HttpClient } from '@angular/common/http';
 import { AgentService } from './agent.service';
+import { WebSocketService } from '../services/websocket.service';
+import { ChatService, ChatMessage } from '../services/chat.service';
 
 @Component({
   standalone: true,
@@ -13,35 +12,35 @@ import { AgentService } from './agent.service';
   imports: [CommonModule, FormsModule],
   templateUrl: './agent.component.html',
   styleUrls: ['./agent.component.css'],
-  providers: [AgentService] // ✅ provide the service
+  providers: [AgentService]
 })
-export class AgentComponent implements OnInit ,OnDestroy{
+export class AgentComponent implements OnInit, OnDestroy {
   role: string = 'agent';
-  status: string = 'live'; // "live" by default
+  status: string = 'live';
   username: string = '';
-  typingUsername: string = '';
   isUserTyping = false;
+  typingUsername: string = '';
   typingTimeout: any;
   inputText = '';
-  messages: { sender: string; text: string }[] = [];
+  messages: ChatMessage[] = [];
   assignedSessionId: string | null = null;
   pendingSessionOffer: { sessionId: string; expiresIn: number } | null = null;
   showOfferPopup = false;
   countdown = 0;
   timerRef: any;
-  offerSessionId: string = '';
-  offerCountdown: number = 10; // in seconds
-  countdownInterval: any;
+  offerCountdown = 10; // Default countdown time for session offers
 
-
-
-  stompClient!: Client;
-  constructor(private http: HttpClient, private agentService: AgentService) { }
+  constructor(
+    private http: HttpClient,
+    private agentService: AgentService,
+    private wsService: WebSocketService,
+    private chatService: ChatService
+  ) {}
 
   ngOnDestroy() {
     if (this.timerRef) clearInterval(this.timerRef);
+    this.wsService.disconnect();
   }
-  
 
   ngOnInit() {
     this.username = localStorage.getItem('username') || '';
@@ -55,127 +54,53 @@ export class AgentComponent implements OnInit ,OnDestroy{
     });
 
     this.setupWebSocketConnection();
+    this.setupChatSubscriptions();
   }
 
-  //Old implemetation without confirm-decline offer
-
-  // setupWebSocketConnection() {
-  //   this.stompClient = new Client({
-  //     webSocketFactory: () => new SockJS('http://localhost:8080/chat-websocket'),
-  //     connectHeaders: {
-  //       username: localStorage.getItem('username') || ''
-  //     },
-  //     reconnectDelay: 5000,
-  //     debug: (msg) => console.log('[Agent WS]', msg),
-  //     onConnect: () => {
-  //       console.log('[Agent] Connected ✅');
-  //       this.stompClient.subscribe('/topic/agent-status', (message) => {
-  //         const data = JSON.parse(message.body);
-  //         console.log("The status changed to ", data.status);
-  //         if (data.username === this.username) {
-  //           this.status = data.status.toLowerCase(); // updates UI
-  //         }
-  //       });
-  //       // 💡 Wait for assigned session
-  //       this.stompClient.subscribe('/topic/session-assignments-all', (message) => {
-  //         const data = JSON.parse(message.body);
-  //         if (data.agent === this.username) {
-  //           const sessionId = data.sessionId;
-
-  //           console.log('[Agent] Assigned to session:', sessionId);
-
-  //           // Subscribe to session-specific messages
-  //           this.stompClient.subscribe(`/topic/messages/${sessionId}`, (msg) => {
-  //             const received = JSON.parse(msg.body);
-  //             this.messages.push({ sender: received.sender, text: received.message });
-  //           });
-
-  //           // ✅ ✅ Subscribe to typing after assignment
-  //           this.stompClient.subscribe(`/topic/typing/${sessionId}`, (message) => {
-  //             const data = JSON.parse(message.body);
-  //             if (data.senderType !== this.role) {
-  //               this.isUserTyping = data.typing === 'true' || data.typing === true;
-  //               this.typingUsername = data.sender;
-  //             }
-  //           });
-
-  //           this.assignedSessionId = sessionId;
-  //         }
-  //       });
-
-  //     },
-  //     onStompError: (frame) => {
-  //       console.error('[Agent WS] STOMP error:', frame.headers['message']);
-  //     }
-  //   });
-
-  //   this.stompClient.activate();
-  // }
-
-
-  //New Implementation with confirm-decline
-  setupWebSocketConnection() {
-    this.stompClient = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8080/chat-websocket'),
-      connectHeaders: {
-        username: localStorage.getItem('username') || ''
-      },
-      reconnectDelay: 5000,
-      debug: (msg) => console.log('[Agent WS]', msg),
-      onConnect: () => {
-        console.log('[Agent] Connected ✅');
-
-        // ✅ Agent status updates
-        this.stompClient.subscribe('/topic/agent-status', (message) => {
-          const data = JSON.parse(message.body);
-          console.log("The status changed to ", data.status);
-          if (data.username === this.username) {
-            this.status = data.status.toLowerCase(); // updates UI
-          }
-        });
-
-        // ✅ Subscribe to agent-specific session offers
-        console.log('[Agent] Subscribing to /topic/session-offers/' + this.username);
-        this.stompClient.subscribe('/topic/session-offers/' + this.username, (message) => {
-          console.log('[Agent] ====== Received Session Offer ======');
-          const data = JSON.parse(message.body);
-          this.pendingSessionOffer = {
-            sessionId: data.sessionId,
-            expiresIn: data.expiresIn || 10
-          };
-          this.showOfferPopup = true;
-          this.startCountdownTimer(data.expiresIn);
-          console.log('[Agent] ====== Offer Processed ======');
-        });
-      },
-      onStompError: (frame) => {
-        console.error('[Agent WS] STOMP error:', frame.headers['message']);
-      }
+  setupChatSubscriptions() {
+    this.chatService.getMessages().subscribe(messages => {
+      this.messages = messages;
     });
 
-    this.stompClient.activate();
+    this.chatService.getTypingStatus().subscribe(status => {
+      this.isUserTyping = status.isTyping;
+      this.typingUsername = status.username;
+    });
   }
 
+  setupWebSocketConnection() {
+    this.wsService.connect(this.username).then(() => {
+      console.log('[Agent] Connected ✅');
 
+      // Subscribe to agent status updates
+      this.wsService.subscribe('/topic/agent-status', (data) => {
+        console.log("The status changed to ", data.status);
+        if (data.username === this.username) {
+          this.status = data.status.toLowerCase();
+        }
+      });
+
+      // Subscribe to session offers
+      this.wsService.subscribe('/topic/session-offers/' + this.username, (data) => {
+        console.log('[Agent] ====== Received Session Offer ======');
+        this.pendingSessionOffer = {
+          sessionId: data.sessionId,
+          expiresIn: data.expiresIn || 10
+        };
+        this.showOfferPopup = true;
+        this.startCountdownTimer(data.expiresIn);
+        console.log('[Agent] ====== Offer Processed ======');
+      });
+    }).catch(error => {
+      console.error('[Agent WS] Connection error:', error);
+    });
+  }
 
   sendMessage() {
     if (!this.inputText.trim() || !this.assignedSessionId) return;
-
-    const payload = {
-      sender: this.username,
-      message: this.inputText.trim(),
-      sessionId: this.assignedSessionId // ✅ include sessionId
-    };
-
-    this.stompClient.publish({
-      destination: `/app/sendMessage`, // ✅ keep it generic because backend handles sending to correct session
-      body: JSON.stringify(payload)
-    });
-
-
+    this.chatService.sendMessage(this.username, this.inputText, this.assignedSessionId);
     this.inputText = '';
   }
-
 
   handleTyping() {
     this.sendTyping(true);
@@ -187,19 +112,10 @@ export class AgentComponent implements OnInit ,OnDestroy{
   }
 
   sendTyping(isTyping: boolean) {
-    if (this.stompClient && this.stompClient.connected && this.assignedSessionId) {
-      this.stompClient.publish({
-        destination: '/app/typing',
-        body: JSON.stringify({
-          sender: this.username,
-          senderType: this.role,
-          typing: isTyping,
-          sessionId: this.assignedSessionId // ✅ required
-        })
-      });
+    if (this.assignedSessionId) {
+      this.chatService.sendTyping(this.username, this.role, isTyping, this.assignedSessionId);
     }
   }
-
 
   updateAgentStatus(status: string) {
     const username = localStorage.getItem('username')!;
@@ -212,8 +128,6 @@ export class AgentComponent implements OnInit ,OnDestroy{
   onStatusChange() {
     this.updateAgentStatus(this.status);
   }
-
-
 
   logout() {
     const username = localStorage.getItem('username');
@@ -242,13 +156,15 @@ export class AgentComponent implements OnInit ,OnDestroy{
     this.showOfferPopup = false;
     clearInterval(this.timerRef);
   }
+
   acceptOffer() {
     if (!this.pendingSessionOffer) return;
     const sessionId = this.pendingSessionOffer.sessionId;
   
     this.agentService.acceptOffer(sessionId, this.username).subscribe(() => {
+      console.log('[Agent] Session accepted:', sessionId);
       this.assignedSessionId = sessionId;
-      this.subscribeToSession(sessionId);
+      this.chatService.subscribeToSession(sessionId, this.role);
       this.clearOfferPopup();
     });
   }
@@ -261,23 +177,4 @@ export class AgentComponent implements OnInit ,OnDestroy{
       this.clearOfferPopup();
     });
   }
-  
-
-  subscribeToSession(sessionId: string) {
-      //this is the topic where the user will send the messages to the agent
-    this.stompClient.subscribe(`/topic/messages/${sessionId}`, (msg) => {
-      const received = JSON.parse(msg.body);
-      this.messages.push({ sender: received.sender, text: received.message });
-    });
-
-    this.stompClient.subscribe(`/topic/typing/${sessionId}`, (message) => {
-      const data = JSON.parse(message.body);
-      if (data.senderType !== this.role) {
-        this.isUserTyping = data.typing === 'true' || data.typing === true;
-        this.typingUsername = data.sender;
-      }
-    });
-  }
-
-
 }

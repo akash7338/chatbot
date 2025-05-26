@@ -54,8 +54,8 @@ public class UserToAgentAssignmentService {
         if (!availableAgentsList.contains(agentUsername)) {
             System.out.println("[Agent] ====== Registering Live Agent ======");
             System.out.println("[Agent] Username: " + agentUsername);
-            System.out.println("[Agent] Current available agents: " + availableAgentsList);
             availableAgentsList.add(agentUsername);
+            System.out.println("[Agent] Current available agents: " + availableAgentsList);
                     }
     }
 
