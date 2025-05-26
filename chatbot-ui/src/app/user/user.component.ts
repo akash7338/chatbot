@@ -1,10 +1,10 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import { WebSocketService } from '../services/websocket.service';
 import { ChatService, ChatMessage } from '../services/chat.service';
 import { AuthService } from '../services/auth.service';
+import { UserService } from './user.service';
 
 @Component({
   standalone: true,
@@ -27,7 +27,7 @@ export class UserComponent implements OnInit, OnDestroy {
   selectedFlow = '';
 
   constructor(
-    private http: HttpClient,
+    private userService: UserService,
     private wsService: WebSocketService,
     private chatService: ChatService,
     private authService: AuthService
@@ -87,15 +87,8 @@ export class UserComponent implements OnInit, OnDestroy {
       this.messages.push({ sender: 'bot', text: 'Connecting you to a live agent...' });
       this.createSession();
     } else {
-      this.chatService.sendMessageHttp(this.sessionId || 'new', option).subscribe({
-        next: (response) => {
-          this.messages.push({ sender: 'bot', text: response });
-        },
-        error: (error) => {
-          console.error('[User] Bot response error:', error);
-          this.messages.push({ sender: 'bot', text: 'Sorry, I encountered an error. Please try again.' });
-        }
-      });
+      // Other options are handled by the bot like track order, place order, etc.
+      this.messages.push({ sender: 'bot', text: option });
     }
   }
 
@@ -108,7 +101,7 @@ export class UserComponent implements OnInit, OnDestroy {
       const agent = data.agent;
       this.messages.push({ sender: 'bot', text: `Agent ${agent} accepted your request. ✅` });
     });
-    this.http.post(`http://localhost:8080/api/assign-agent/${this.sessionId}`, {}).subscribe({
+    this.userService.assignAgent(this.sessionId).subscribe({
       next: () => {
         console.log('[User] Offer process started');
         this.messages.push({ sender: 'bot', text: 'Waiting for an available agent to accept...' });
@@ -127,15 +120,8 @@ export class UserComponent implements OnInit, OnDestroy {
     if (this.selectedFlow === 'Agent') {
       this.chatService.sendMessage(this.username, this.inputText, this.sessionId);
     } else {
-      this.chatService.sendMessageHttp(this.sessionId, this.inputText).subscribe({
-        next: (response) => {
-          this.messages.push({ sender: 'bot', text: response });
-        },
-        error: (error) => {
-          console.error('[User] Bot response error:', error);
-          this.messages.push({ sender: 'bot', text: 'Sorry, I encountered an error. Please try again.' });
-        }
-      });
+      // Just display the message as a bot response for other options like track order, place order, etc.
+      this.messages.push({ sender: 'bot', text: this.inputText });
     }
     this.inputText = '';
   }
