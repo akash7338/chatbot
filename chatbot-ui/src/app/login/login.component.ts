@@ -1,8 +1,7 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   standalone: true,
@@ -16,30 +15,17 @@ export class LoginComponent {
   password = '';
   errorMessage = '';
 
-  constructor(private http: HttpClient, private router: Router) { }
+  constructor(private authService: AuthService) { }
 
   login() {
-    if (!this.username.trim() || !this.password.trim()) {
-      this.errorMessage = 'Username and password are required.';
-      return;
+    try {
+      this.authService.login(this.username, this.password).subscribe({
+        error: () => {
+          this.errorMessage = 'Invalid credentials. Please try again.';
+        }
+      });
+    } catch (error) {
+      this.errorMessage = error instanceof Error ? error.message : 'An error occurred';
     }
-
-    const payload = {
-      username: this.username,
-      password: this.password
-    };
-
-    this.http.post<any>('http://localhost:8080/api/auth/login', payload).subscribe({
-      next: (res) => {
-        const role = res.role.replace('ROLE_', '').toLowerCase(); // e.g. ROLE_USER -> user, ROLE_AGENT -> agent
-        localStorage.setItem('token', res.token);
-        localStorage.setItem('role', res.role);
-        localStorage.setItem('username', this.username);
-        this.router.navigate([`/${role}`]);
-      },
-      error: () => {
-        this.errorMessage = 'Invalid credentials. Please try again.';
-      }
-    });
   }
 }

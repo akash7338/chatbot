@@ -8,12 +8,17 @@ export interface ChatMessage {
   text: string;
 }
 
+export interface TypingStatus {
+  username: string;
+  isTyping: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ChatService {
   private messages = new BehaviorSubject<ChatMessage[]>([]);
-  private isTyping = new BehaviorSubject<{ isTyping: boolean; username: string }>({ isTyping: false, username: '' });
+  private isTyping = new BehaviorSubject<TypingStatus>({ isTyping: false, username: '' });
   private baseUrl = 'http://localhost:8080/api/chatbot';
 
   constructor(
@@ -25,7 +30,7 @@ export class ChatService {
     return this.messages.asObservable();
   }
 
-  getTypingStatus(): Observable<{ isTyping: boolean; username: string }> {
+  getTypingStatus(): Observable<TypingStatus> {
     return this.isTyping.asObservable();
   }
 

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { WebSocketService } from '../services/websocket.service';
 import { ChatService, ChatMessage } from '../services/chat.service';
-import { Router } from '@angular/router';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   standalone: true,
@@ -30,7 +30,7 @@ export class UserComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     private wsService: WebSocketService,
     private chatService: ChatService,
-    private router: Router
+    private authService: AuthService
   ) {}
 
   ngOnDestroy() {
@@ -38,7 +38,7 @@ export class UserComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.username = localStorage.getItem('username') || '';
+    this.username = this.authService.getUsername() || '';
     this.setupWebSocketConnection();
     this.setupChatSubscriptions();
 
@@ -157,14 +157,6 @@ export class UserComponent implements OnInit, OnDestroy {
   }
 
   logout() {
-    const username = localStorage.getItem('username');
-    if (username) {
-      this.http.post('http://localhost:8080/api/auth/logout', { username }).subscribe(() => {
-        console.log('✅ User logged out');
-      });
-    }
-  
-    localStorage.clear();
-    window.location.href = '/login';
+    this.authService.handleLogout();
   }
 }

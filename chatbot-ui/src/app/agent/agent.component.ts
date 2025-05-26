@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { AgentService } from './agent.service';
 import { WebSocketService } from '../services/websocket.service';
 import { ChatService, ChatMessage } from '../services/chat.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   standalone: true,
@@ -34,7 +35,8 @@ export class AgentComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     private agentService: AgentService,
     private wsService: WebSocketService,
-    private chatService: ChatService
+    private chatService: ChatService,
+    private authService: AuthService
   ) {}
 
   ngOnDestroy() {
@@ -43,7 +45,7 @@ export class AgentComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.username = localStorage.getItem('username') || '';
+    this.username = this.authService.getUsername() || '';
 
     this.agentService.getAgentStatus(this.username).subscribe({
       next: (res) => {
@@ -69,20 +71,27 @@ export class AgentComponent implements OnInit, OnDestroy {
   }
 
   setupWebSocketConnection() {
+    console.log('[Agent] Attempting to connect to WebSocket...');
     this.wsService.connect(this.username).then(() => {
       console.log('[Agent] Connected ✅');
+      console.log('[Agent] Username:', this.username);
 
       // Subscribe to agent status updates
+      console.log('[Agent] Subscribing to status updates...');
       this.wsService.subscribe('/topic/agent-status', (data) => {
-        console.log("The status changed to ", data.status);
+        console.log("[Agent] Status update received:", data);
         if (data.username === this.username) {
           this.status = data.status.toLowerCase();
+          console.log("[Agent] Status updated to:", this.status);
         }
       });
 
       // Subscribe to session offers
-      this.wsService.subscribe('/topic/session-offers/' + this.username, (data) => {
+      const offerTopic = '/topic/session-offers/' + this.username;
+      console.log('[Agent] Subscribing to offers on:', offerTopic);
+      this.wsService.subscribe(offerTopic, (data) => {
         console.log('[Agent] ====== Received Session Offer ======');
+        console.log('[Agent] Offer data:', data);
         this.pendingSessionOffer = {
           sessionId: data.sessionId,
           expiresIn: data.expiresIn || 10
@@ -130,15 +139,7 @@ export class AgentComponent implements OnInit, OnDestroy {
   }
 
   logout() {
-    const username = localStorage.getItem('username');
-    if (username) {
-      this.http.post('http://localhost:8080/api/auth/logout', { username }).subscribe(() => {
-        console.log('✅ Agent unregistered from backend');
-      });
-    }
-  
-    localStorage.clear();
-    window.location.href = '/login';
+    this.authService.handleLogout();
   }
   
   startCountdownTimer(seconds: number) {

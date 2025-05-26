@@ -16,35 +16,50 @@ export class WebSocketService {
   private connected = new BehaviorSubject<boolean>(false);
   private readonly WS_URL = 'http://localhost:8080/chat-websocket';
 
-  constructor() {}
+  constructor() {
+    console.log('[WebSocket] Service initialized with URL:', this.WS_URL);
+  }
 
   connect(username: string): Promise<void> {
+    console.log('[WebSocket] Attempting to connect with username:', username);
     return new Promise((resolve, reject) => {
       this.stompClient = new Client({
-        webSocketFactory: () => new SockJS(this.WS_URL),
+        webSocketFactory: () => {
+          console.log('[WebSocket] Creating SockJS connection to:', this.WS_URL);
+          return new SockJS(this.WS_URL);
+        },
         connectHeaders: { username },
         reconnectDelay: 5000,
-        debug: (msg) => console.log('[WebSocket]', msg),
+        debug: (msg) => console.log('[WebSocket Debug]', msg),
         onConnect: () => {
-          console.log('[WebSocket] Connected ✅');
+          console.log('[WebSocket] Connected successfully ✅');
+          console.log('[WebSocket] Connection headers:', this.stompClient?.connectHeaders);
           this.connected.next(true);
           resolve();
         },
         onStompError: (frame) => {
           console.error('[WebSocket] STOMP error:', frame.headers['message']);
+          console.error('[WebSocket] Error details:', frame);
           reject(new Error(frame.headers['message']));
+        },
+        onWebSocketError: (event) => {
+          console.error('[WebSocket] WebSocket error:', event);
+          reject(new Error('WebSocket connection failed'));
         }
       });
 
+      console.log('[WebSocket] Activating STOMP client...');
       this.stompClient.activate();
     });
   }
 
   disconnect(): void {
+    console.log('[WebSocket] Disconnecting...');
     if (this.stompClient) {
       this.stompClient.deactivate();
       this.stompClient = null;
       this.connected.next(false);
+      console.log('[WebSocket] Disconnected');
     }
   }
 
@@ -54,19 +69,22 @@ export class WebSocketService {
 
   subscribe(topic: string, callback: (message: any) => void): void {
     if (!this.stompClient?.connected) {
-      console.error('[WebSocket] Not connected');
+      console.error('[WebSocket] Cannot subscribe - not connected');
       return;
     }
 
-    console.log('[WebSocket] Subscribing to:', topic);
+    console.log('[WebSocket] Subscribing to topic:', topic);
+    console.log('[WebSocket] Current connection state:', this.stompClient.connected);
+    
     this.stompClient.subscribe(topic, (message: Message) => {
+      console.log('[WebSocket] Raw message received:', message);
       try {
         const data = JSON.parse(message.body);
-        console.log('[WebSocket] Received message on', topic, ':', data);
+        console.log('[WebSocket] Parsed message on', topic, ':', data);
         callback(data);
       } catch (error) {
         console.error('[WebSocket] Error parsing message:', error);
-        // Try to pass the raw message if parsing fails
+        console.log('[WebSocket] Raw message body:', message.body);
         callback(message.body);
       }
     });
@@ -74,7 +92,7 @@ export class WebSocketService {
 
   publish(destination: string, body: any): void {
     if (!this.stompClient?.connected) {
-      console.error('[WebSocket] Not connected');
+      console.error('[WebSocket] Cannot publish - not connected');
       return;
     }
 
@@ -96,5 +114,18 @@ export class WebSocketService {
 
   get isConnectedNow(): boolean {
     return this.stompClient?.connected || false;
+  }
+
+  send(destination: string, body: any) {
+    if (!this.stompClient) {
+      console.error('[WebSocket] Cannot send - client not initialized');
+      return;
+    }
+
+    console.log('[WebSocket] Sending to', destination, ':', body);
+    this.stompClient.publish({
+      destination,
+      body: JSON.stringify(body)
+    });
   }
 } 
