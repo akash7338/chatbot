@@ -55,14 +55,19 @@ export class UserComponent implements OnInit, OnDestroy {
   }
 
   setupChatSubscriptions() {
-    this.chatService.getMessages().subscribe(messages => {
-      this.messages = messages;
-    });
-
-    this.chatService.getTypingStatus().subscribe(status => {
-      this.isAgentTyping = status.isTyping;
-      this.typingUsername = status.username;
-    });
+    if (this.sessionId) {
+      this.chatService.subscribeToSession(
+        this.sessionId,
+        'user',
+        (message) => {
+          this.messages.push(message);
+        },
+        (status) => {
+          this.isAgentTyping = status.isTyping;
+          this.typingUsername = status.username;
+        }
+      );
+    }
   }
 
   setupWebSocketConnection() {
@@ -95,7 +100,7 @@ export class UserComponent implements OnInit, OnDestroy {
   createSession() {
     this.isWaitingForAgent = true;
     this.sessionId = this.username + '_' + Date.now(); // Generate a unique session ID
-    this.chatService.subscribeToSession(this.sessionId, this.role);
+    this.setupChatSubscriptions();
     this.wsService.subscribe(`/topic/session-assigned/${this.sessionId}`, (data) => {
       console.log('[User] Agent assigned:', data);
       const agent = data.agent;

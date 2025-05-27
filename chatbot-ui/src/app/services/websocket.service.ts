@@ -1,11 +1,15 @@
 import { Injectable } from '@angular/core';
 import { Client, Message } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { BehaviorSubject, Observable } from 'rxjs';
 
 export interface ChatMessage {
   sender: string;
   text: string;
+}
+
+export interface TypingStatus {
+  username: string;
+  isTyping: boolean;
 }
 
 @Injectable({
@@ -13,8 +17,8 @@ export interface ChatMessage {
 })
 export class WebSocketService {
   private stompClient: Client | null = null;
-  private connected = new BehaviorSubject<boolean>(false);
   private readonly WS_URL = 'http://localhost:8080/chat-websocket';
+  private subscriptions: Map<string, any> = new Map();
 
   constructor() {
     console.log('[WebSocket] Service initialized with URL:', this.WS_URL);
@@ -34,7 +38,6 @@ export class WebSocketService {
         onConnect: () => {
           console.log('[WebSocket] Connected successfully ✅');
           console.log('[WebSocket] Connection headers:', this.stompClient?.connectHeaders);
-          this.connected.next(true);
           resolve();
         },
         onStompError: (frame) => {
@@ -56,15 +59,16 @@ export class WebSocketService {
   disconnect(): void {
     console.log('[WebSocket] Disconnecting...');
     if (this.stompClient) {
+      // Unsubscribe from all topics
+      this.subscriptions.forEach((subscription) => {
+        subscription.unsubscribe();
+      });
+      this.subscriptions.clear();
+      
       this.stompClient.deactivate();
       this.stompClient = null;
-      this.connected.next(false);
       console.log('[WebSocket] Disconnected');
     }
-  }
-
-  isConnected(): Observable<boolean> {
-    return this.connected.asObservable();
   }
 
   subscribe(topic: string, callback: (message: any) => void): void {
@@ -76,7 +80,7 @@ export class WebSocketService {
     console.log('[WebSocket] Subscribing to topic:', topic);
     console.log('[WebSocket] Current connection state:', this.stompClient.connected);
     
-    this.stompClient.subscribe(topic, (message: Message) => {
+    const subscription = this.stompClient.subscribe(topic, (message: Message) => {
       console.log('[WebSocket] Raw message received:', message);
       try {
         const data = JSON.parse(message.body);
@@ -88,6 +92,18 @@ export class WebSocketService {
         callback(message.body);
       }
     });
+
+    // Store the subscription
+    this.subscriptions.set(topic, subscription);
+  }
+
+  unsubscribe(topic: string): void {
+    const subscription = this.subscriptions.get(topic);
+    if (subscription) {
+      subscription.unsubscribe();
+      this.subscriptions.delete(topic);
+      console.log('[WebSocket] Unsubscribed from topic:', topic);
+    }
   }
 
   publish(destination: string, body: any): void {
@@ -103,7 +119,6 @@ export class WebSocketService {
     });
   }
 
-  // New methods for chat functionality
   sendMessage(destination: string, message: any): void {
     this.publish(destination, message);
   }
@@ -114,18 +129,5 @@ export class WebSocketService {
 
   get isConnectedNow(): boolean {
     return this.stompClient?.connected || false;
-  }
-
-  send(destination: string, body: any) {
-    if (!this.stompClient) {
-      console.error('[WebSocket] Cannot send - client not initialized');
-      return;
-    }
-
-    console.log('[WebSocket] Sending to', destination, ':', body);
-    this.stompClient.publish({
-      destination,
-      body: JSON.stringify(body)
-    });
   }
 } 

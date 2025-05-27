@@ -60,14 +60,20 @@ export class AgentComponent implements OnInit, OnDestroy {
   }
 
   setupChatSubscriptions() {
-    this.chatService.getMessages().subscribe(messages => {
-      this.messages = messages;
-    });
-
-    this.chatService.getTypingStatus().subscribe(status => {
-      this.isUserTyping = status.isTyping;
-      this.typingUsername = status.username;
-    });
+    // Only subscribe when we have an assigned session
+    if (this.assignedSessionId) {
+      this.chatService.subscribeToSession(
+        this.assignedSessionId,
+        'agent',
+        (message) => {
+          this.messages.push(message);
+        },
+        (status) => {
+          this.isUserTyping = status.isTyping;
+          this.typingUsername = status.username;
+        }
+      );
+    }
   }
 
   setupWebSocketConnection() {
@@ -161,11 +167,17 @@ export class AgentComponent implements OnInit, OnDestroy {
   acceptOffer() {
     if (!this.pendingSessionOffer) return;
     const sessionId = this.pendingSessionOffer.sessionId;
-  
+
+    // First unsubscribe from any existing session topics
+    if (this.assignedSessionId) {
+      this.wsService.unsubscribe(`/topic/messages/${this.assignedSessionId}`);
+      this.wsService.unsubscribe(`/topic/typing/${this.assignedSessionId}`);
+    }
+
     this.agentService.acceptOffer(sessionId, this.username).subscribe(() => {
       console.log('[Agent] Session accepted:', sessionId);
       this.assignedSessionId = sessionId;
-      this.chatService.subscribeToSession(sessionId, this.role);
+      this.setupChatSubscriptions();
       this.clearOfferPopup();
     });
   }

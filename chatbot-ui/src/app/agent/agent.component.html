@@ -8,7 +8,7 @@
   <div class="agent-header">
     <div class="status-control">
       <span class="status-indicator" [ngClass]="status"></span>
-      <select class="status-dropdown" [(ngModel)]="status" (change)="onStatusChange()">
+      <select class="status-dropdown" [(ngModel)]="status" (change)="onStatusChange()" [disabled]="assignedSessionId !== null">
         <option value="live">🟢 Live</option>
         <option value="busy">🔴 Busy</option>
         <option value="offline">⚫ Offline</option>
