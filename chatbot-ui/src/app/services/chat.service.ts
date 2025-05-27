@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { WebSocketService } from './websocket.service';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
 export interface ChatMessage {
@@ -17,22 +17,12 @@ export interface TypingStatus {
   providedIn: 'root'
 })
 export class ChatService {
-  private messages = new BehaviorSubject<ChatMessage[]>([]);
-  private isTyping = new BehaviorSubject<TypingStatus>({ isTyping: false, username: '' });
   private baseUrl = 'http://localhost:8080/api/chatbot';
 
   constructor(
     private wsService: WebSocketService,
     private http: HttpClient
   ) {}
-
-  getMessages(): Observable<ChatMessage[]> {
-    return this.messages.asObservable();
-  }
-
-  getTypingStatus(): Observable<TypingStatus> {
-    return this.isTyping.asObservable();
-  }
 
   sendMessage(sender: string, message: string, sessionId: string): void {
     if (!message.trim() || !sessionId) return;
@@ -67,31 +57,29 @@ export class ChatService {
     this.wsService.sendTyping('/app/typing', payload);
   }
 
-  subscribeToSession(sessionId: string, currentUserType: string): void {
+  subscribeToSession(sessionId: string, currentUserType: string, 
+    onMessage: (message: ChatMessage) => void,
+    onTyping: (status: TypingStatus) => void): void {
+    
     // Subscribe to messages
     this.wsService.subscribe(`/topic/messages/${sessionId}`, (data) => {
       console.log('[Chat] Received message:', data);
-      const currentMessages = this.messages.value;
-      this.messages.next([...currentMessages, {
+      onMessage({
         sender: data.sender,
         text: data.message
-      }]);
+      });
     });
 
     // Subscribe to typing
     this.wsService.subscribe(`/topic/typing/${sessionId}`, (data) => {
       console.log('[Chat] Received typing:', data);
       if (data.senderType !== currentUserType) {
-        this.isTyping.next({
-          isTyping: data.typing === true || data.typing === 'true',
-          username: data.sender
+        onTyping({
+          username: data.sender,
+          isTyping: data.typing === true || data.typing === 'true'
         });
       }
     });
-  }
-
-  clearMessages(): void {
-    this.messages.next([]);
   }
 
   offerSessionToAgents(sessionId: string): Observable<any> {
